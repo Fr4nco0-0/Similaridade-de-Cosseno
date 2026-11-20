@@ -90,9 +90,10 @@ div[data-testid="stTextInput"] input::placeholder {
 /* RESULTADOS */
 
 div[data-testid="stVerticalBlockBorderWrapper"] {
-    background-color: var(--surface);
-    border: 1px solid var(--border);
+    background-color: rgba(10, 10, 10, 0.78);
+    border: 1px solid rgba(255, 255, 255, 0.12);
     border-radius: 12px;
+    backdrop-filter: blur(4px);
 }
 
 /* IMAGENS DOS MANGÁS */
