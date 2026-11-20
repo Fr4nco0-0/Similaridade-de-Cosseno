@@ -104,25 +104,11 @@ div[data-testid="stVerticalBlockBorderWrapper"] {
     border-radius: 12px !important;
 }
 
-/* MANTÉM O CONTEÚDO TRANSPARENTE */
-div[data-testid="stVerticalBlockBorderWrapper"] [data-testid="stVerticalBlock"] {
-    background-color: transparent !important;
-}
-
 /* IMAGENS DOS MANGÁS */
 
 div[data-testid="stImage"] img {
     border-radius: 8px;
     object-fit: contain;
-}
-
-/* TESTE DE FUNDO DOS CARTÕES */
-div[data-testid="stVerticalBlockBorderWrapper"] {
-    background: rgba(10, 10, 10, 0.95) !important;
-}
-
-div[data-testid="stVerticalBlockBorderWrapper"] > div:first-child {
-    background: rgba(10, 10, 10, 0.95) !important;
 }
 
 /* SEPARADORES */
