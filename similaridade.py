@@ -3,6 +3,7 @@ import re
 import numpy as np
 import pandas as pd
 from sentence_transformers import SentenceTransformer
+from similaridade import buscar_titulo, carregar, recomendar
 
 MODELO = "paraphrase-multilingual-MiniLM-L12-v2"
 COLUNAS = ["title", "score", "genres", "themes", "synopsis", "image_url"]
