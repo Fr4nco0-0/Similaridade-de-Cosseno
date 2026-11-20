@@ -115,6 +115,12 @@ div[data-testid="stImage"] img {
     object-fit: contain;
 }
 
+/* TESTE DE FUNDO DOS CARTÕES */
+div[data-testid="stVerticalBlockBorderWrapper"] > div {
+    background-color: rgba(10, 10, 10, 0.95) !important;
+    border-radius: 12px !important;
+}
+
 /* SEPARADORES */
 
 hr {
