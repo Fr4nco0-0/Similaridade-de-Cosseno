@@ -4,3 +4,9 @@
 - Fonte do Dataset: [Anime & Manga Analytics Dataset](https://www.kaggle.com/datasets/patelris/anime-and-manga-dataset-2026)
 - Último update: 24 de abril de 2026
 - Fonte dos dados: [MyAnimeList](https://myanimelist.net) via [Jikan API](https://jikan.moe)
+
+---------
+
+## Site
+
+https://atqqq7yny3sernrkiyrhyp.streamlit.app/
