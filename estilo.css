@@ -96,17 +96,16 @@ div[data-testid="stVerticalBlockBorderWrapper"] {
     backdrop-filter: blur(4px);
 }
 
-/* CARTÕES DOS RESULTADOS */
+/* CARTÕES DOS MANGÁS */
 div[data-testid="stVerticalBlockBorderWrapper"] {
-    background: rgba(10, 10, 10, 0.78) !important;
+    background-color: rgba(10, 10, 10, 0.80) !important;
     border: 1px solid rgba(255, 255, 255, 0.15) !important;
-    backdrop-filter: blur(4px);
-    -webkit-backdrop-filter: blur(4px);
+    border-radius: 12px !important;
 }
 
-/* FUNDO INTERNO DOS CARTÕES */
-div[data-testid="stVerticalBlockBorderWrapper"] > div {
-    background: transparent !important;
+/* MANTÉM O CONTEÚDO TRANSPARENTE */
+div[data-testid="stVerticalBlockBorderWrapper"] [data-testid="stVerticalBlock"] {
+    background-color: transparent !important;
 }
 
 /* IMAGENS DOS MANGÁS */
