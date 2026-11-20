@@ -1,58 +1,50 @@
-import html
 import os
 
-import streamlit as st
+import numpy as np
+import pandas as pd
+from sentence_transformers import SentenceTransformer
 
-from similaridade import buscar_titulo, carregar, recomendar
-
-st.set_page_config(page_title="Recomendador de Mangá", layout="wide")
-
-if os.path.exists("estilo.css"):
-    st.markdown(f"<style>{open('estilo.css', encoding='utf-8').read()}</style>", unsafe_allow_html=True)
+MODELO = "paraphrase-multilingual-MiniLM-L12-v2"
+COLUNAS = ["title", "score", "genres", "synopsis", "image_url"]
 
 
-@st.cache_resource
-def dados():
-    return carregar()
+def carregar():
+    """Lê o dataset, o modelo e os embeddings (embeddings.npz em float16; gera só se não existir)."""
+    df = pd.read_parquet("manga_limpo.parquet").reset_index(drop=True)
+    model = SentenceTransformer(MODELO)
+    model.max_seq_length = 128
+
+    if os.path.exists("embeddings.npz") and len(np.load("embeddings.npz")["emb"]) == len(df):
+        emb = np.load("embeddings.npz")["emb"]
+    else:
+        emb = model.encode(df["synopsis"].tolist(), batch_size=64,
+                           normalize_embeddings=True, show_progress_bar=True)
+        np.savez_compressed("embeddings.npz", emb=emb.astype(np.float16))
+    return df, model, emb.astype(np.float32)
 
 
-def cartao(r, similaridade=True):
-    with st.container(border=True):
-        col1, col2 = st.columns([1, 4])
-        url = str(r.get("image_url", ""))
-        if url.startswith("http"):
-            if r.get("adulto"):
-                # o CSS aplica o blur e o selo +18; clicar na capa revela
-                col1.markdown(
-                    f'<details class="capa-adulta"><summary>'
-                    f'<img src="{html.escape(url, quote=True)}"><span class="selo-18">+18</span>'
-                    f'</summary></details>',
-                    unsafe_allow_html=True,
-                )
-            else:
-                col1.image(url)
-        col2.markdown(f"### {r['title']}")
-        info = f"Nota: {r.get('score', '')}"
-        if similaridade:
-            info = f"Similaridade: {float(r['similaridade']):.3f} · " + info
-        col2.write(info)
-        col2.caption(str(r.get("genres", "")).replace("|", ", "))
-        col2.write(str(r.get("synopsis", ""))[:400])
+def recomendar(busca, df, model, emb, k=10):
+    """Devolve (rótulo, DataFrame com os k mais parecidos com a busca)."""
+    b = busca.lower()
+    igual = df["title"].fillna("").str.lower() == b
+    if "title_english" in df.columns:
+        igual |= df["title_english"].fillna("").str.lower() == b
 
+    if igual.any():
+        i = int(df.index[igual][0])
+        q, pular = emb[i], i
+        rotulo = f"Mais parecidos com: {df.loc[i, 'title']}"
+    else:
+        q = model.encode(busca, normalize_embeddings=True).astype(np.float32)
+        pular = None
+        rotulo = "Mais parecidos com o que você digitou:"
 
-df, model, emb = dados()
+    sims = emb @ q  # normalizado: produto escalar = cosseno
+    top = [int(j) for j in sims.argsort()[::-1] if j != pular][:k]
 
-st.title("📚 Recomendador de Mangá")
-busca = st.text_input("Digite um título, trecho de sinopse ou descrição (português ou inglês)").strip()
-
-if busca:
-    achados = buscar_titulo(busca, df)
-    if len(achados):
-        st.subheader("Títulos encontrados")
-        for _, r in achados.iterrows():
-            cartao(r, similaridade=False)
-
-    rotulo, res = recomendar(busca, df, model, emb)
-    st.subheader(rotulo)
-    for _, r in res.iterrows():
-        cartao(r)
+    res = df.loc[top, [c for c in COLUNAS if c in df.columns]].copy()
+    if "genres" in res.columns:
+        res["genres"] = res["genres"].apply(
+            lambda g: ", ".join(g) if isinstance(g, (list, tuple, np.ndarray)) else g)
+    res["similaridade"] = sims[top].round(3)
+    return rotulo, res.fillna("")
