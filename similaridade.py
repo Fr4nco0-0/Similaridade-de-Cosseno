@@ -23,6 +23,34 @@ def carregar():
     return df, model, emb.astype(np.float32)
 
 
+def _formatar(res):
+    if "genres" in res.columns:
+        res["genres"] = res["genres"].apply(
+            lambda g: ", ".join(g) if isinstance(g, (list, tuple, np.ndarray)) else g)
+    return res
+
+
+def buscar_titulo(busca, df, k=5):
+    """Mangás cujo título (ou título em inglês) contém o texto digitado."""
+    b = busca.lower()
+    t = df["title"].fillna("").str.lower()
+    te = df["title_english"].fillna("").str.lower() if "title_english" in df.columns else t
+    mask = t.str.contains(b, regex=False) | te.str.contains(b, regex=False)
+
+    res = df[mask].copy()
+    if res.empty:
+        return res[[c for c in COLUNAS if c in df.columns]]
+
+    # ordem: título exato, depois começa com o texto, depois o resto (por nota)
+    exato = ((t == b) | (te == b))[mask].values
+    comeca = (t.str.startswith(b) | te.str.startswith(b))[mask].values
+    res["_ordem"] = np.where(exato, 0, np.where(comeca, 1, 2))
+    res["_nota"] = pd.to_numeric(res["score"], errors="coerce").fillna(0) if "score" in res.columns else 0
+    res = res.sort_values(["_ordem", "_nota"], ascending=[True, False]).head(k)
+    res = res[[c for c in COLUNAS if c in res.columns]].copy()
+    return _formatar(res).fillna("")
+
+
 def recomendar(busca, df, model, emb, k=10):
     """Devolve (rótulo, DataFrame com os k mais parecidos com a busca)."""
     b = busca.lower()
@@ -43,8 +71,6 @@ def recomendar(busca, df, model, emb, k=10):
     top = [int(j) for j in sims.argsort()[::-1] if j != pular][:k]
 
     res = df.loc[top, [c for c in COLUNAS if c in df.columns]].copy()
-    if "genres" in res.columns:
-        res["genres"] = res["genres"].apply(
-            lambda g: ", ".join(g) if isinstance(g, (list, tuple, np.ndarray)) else g)
+    res = _formatar(res)
     res["similaridade"] = sims[top].round(3)
     return rotulo, res.fillna("")
