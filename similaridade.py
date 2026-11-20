@@ -1,68 +1,58 @@
+import html
 import os
-import re
-import numpy as np
-import pandas as pd
-from sentence_transformers import SentenceTransformer
 
-MODELO = "paraphrase-multilingual-MiniLM-L12-v2"
-COLUNAS = ["title", "score", "genres", "themes", "synopsis", "image_url"]
+import streamlit as st
 
-# Termos bloqueados em gêneros/temas (correspondência exata ou palavra inteira)
-TERMOS_BLOQUEADOS = [
-    "hentai", "erotica", "ecchi", "smut", "adult", "gore", 
-    "sexual violence", "incest", "harem", "reverse harem"
-]
+from similaridade import buscar_titulo, carregar, recomendar
 
-# Palavras-chave na sinopse (usa \b para buscar palavras inteiras)
-REGEX_SINOPSE = re.compile(
-    r"\b(hentai|erotic|erotica|porn|pornographic|explicit sex|sexual assault|rape|incest|brothel|prostitution|nsfw|18\+)\b",
-    re.IGNORECASE
-)
+st.set_page_config(page_title="Recomendador de Mangá", layout="wide")
 
-def carregar():
-    """Lê o dataset, o modelo e os embeddings (embeddings.npz em float16; gera só se não existir)."""
-    df = pd.read_parquet("manga_limpo.parquet").reset_index(drop=True)
-    model = SentenceTransformer(MODELO)
-    model.max_seq_length = 128
-
-    if os.path.exists("embeddings.npz") and len(np.load("embeddings.npz")["emb"]) == len(df):
-        emb = np.load("embeddings.npz")["emb"]
-    else:
-        emb = model.encode(df["synopsis"].tolist(), batch_size=64,
-                           normalize_embeddings=True, show_progress_bar=True)
-        np.savez_compressed("embeddings.npz", emb=emb.astype(np.float16))
-    return df, model, emb.astype(np.float32)
+if os.path.exists("estilo.css"):
+    st.markdown(f"<style>{open('estilo.css', encoding='utf-8').read()}</style>", unsafe_allow_html=True)
 
 
-def _eh_inapropriado(row):
-    """Verifica se genres, themes ou synopsis contêm conteúdo +18."""
-    generos = str(row.get("genres", "")).lower()
-    temas = str(row.get("themes", "")).lower()
-    sinopse = str(row.get("synopsis", ""))
-
-    # 1. Checa gêneros e temas
-    texto_tags = f"{generos}, {temas}"
-    if any(termo in texto_tags for termo in TERMOS_BLOQUEADOS):
-        return True
-
-    # 2. Checa sinopse com regex de palavra inteira
-    if REGEX_SINOPSE.search(sinopse):
-        return True
-
-    return False
+@st.cache_resource
+def dados():
+    return carregar()
 
 
-def _formatar(res):
-    for col in ["genres", "themes"]:
-        if col in res.columns:
-            res[col] = res[col].apply(
-                lambda g: ", ".join(g) if isinstance(g, (list, tuple, np.ndarray)) else g
-            )
-    
-    # Cria a coluna booleana (True/False) para o front-end/CSS
-    if not res.empty:
-        res["mais_18"] = res.apply(_eh_inapropriado, axis=1)
-    else:
-        res["mais_18"] = pd.Series(dtype=bool)
-        
-    return res
+def cartao(r, similaridade=True):
+    with st.container(border=True):
+        col1, col2 = st.columns([1, 4])
+        url = str(r.get("image_url", ""))
+        if url.startswith("http"):
+            if r.get("adulto"):
+                # o CSS aplica o blur e o selo +18; clicar na capa revela
+                col1.markdown(
+                    f'<details class="capa-adulta"><summary>'
+                    f'<img src="{html.escape(url, quote=True)}"><span class="selo-18">+18</span>'
+                    f'</summary></details>',
+                    unsafe_allow_html=True,
+                )
+            else:
+                col1.image(url)
+        col2.markdown(f"### {r['title']}")
+        info = f"Nota: {r.get('score', '')}"
+        if similaridade:
+            info = f"Similaridade: {float(r['similaridade']):.3f} · " + info
+        col2.write(info)
+        col2.caption(str(r.get("genres", "")).replace("|", ", "))
+        col2.write(str(r.get("synopsis", ""))[:400])
+
+
+df, model, emb = dados()
+
+st.title("📚 Recomendador de Mangá")
+busca = st.text_input("Digite um título, trecho de sinopse ou descrição (português ou inglês)").strip()
+
+if busca:
+    achados = buscar_titulo(busca, df)
+    if len(achados):
+        st.subheader("Títulos encontrados")
+        for _, r in achados.iterrows():
+            cartao(r, similaridade=False)
+
+    rotulo, res = recomendar(busca, df, model, emb)
+    st.subheader(rotulo)
+    for _, r in res.iterrows():
+        cartao(r)
