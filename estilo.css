@@ -135,6 +135,38 @@ hr {
     border-radius: 10px;
 }
 
+/*CAPAS NSFW*/
+
+.capa-nsfw {
+    position: relative;
+    display: block;
+    width: 140px;
+    overflow: hidden;
+    border-radius: 8px;
+}
+
+.capa-nsfw img {
+    display: block;
+    width: 100%;
+    height: auto;
+    filter: blur(15px) !important;
+    transform: scale(1.1);
+}
+
+.capa-nsfw .badge-18 {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: #b41414;
+    color: white;
+    font-size: 20px;
+    font-weight: bold;
+    padding: 8px 14px;
+    border-radius: 6px;
+    z-index: 2;
+}
+
 /* RESPONSIVIDADE */
 
 @media (max-width: 768px) {
