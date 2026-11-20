@@ -18,8 +18,22 @@ def dados():
 def cartao(r, similaridade=True):
     with st.container(border=True):
         col1, col2 = st.columns([1, 4])
-        if str(r.get("image_url", "")).startswith("http"):
-            col1.image(r["image_url"])
+        img_url = str(r.get("image_url", ""))
+        if img_url.startswith("http"):
+            if r.get("mais_18", False):
+                col1.markdown(
+                    f"""
+                    <label class="capa-nsfw" title="Clique para revelar">
+                        <input type="checkbox">
+                        <img src="{img_url}" alt="{r.get('title', '')}">
+                        <span class="badge-18">+18</span>
+                    </label>
+                    """,
+                    unsafe_allow_html=True,
+                )
+            else:
+                col1.image(img_url)
+
         col2.markdown(f"### {r['title']}")
         info = f"Nota: {r.get('score', '')}"
         if similaridade:
