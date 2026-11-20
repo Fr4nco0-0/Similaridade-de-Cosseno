@@ -94,6 +94,12 @@ div[data-testid="stImage"] img {
     border-radius: 8px;
     object-fit: contain;
 }
+/* SEPARADORES */
+
+hr {
+    border-color: var(--border) !important;
+    margin: 100px 0 !important;
+}
 
 /* INFORMAÇÕES SECUNDÁRIAS */
 
