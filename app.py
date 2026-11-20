@@ -17,7 +17,7 @@ def dados():
 
 df, model, emb = dados()
 
-st.title("📚 Recomendador de Mangá")
+st.title("Recomendador de Mangá")
 busca = st.text_input("Digite um título, trecho de sinopse ou descrição (português ou inglês)")
 
 if busca.strip():
@@ -28,6 +28,6 @@ if busca.strip():
         if str(r.get("image_url", "")).startswith("http"):
             col1.image(r["image_url"])
         col2.markdown(f"### {r['title']}")
-        col2.write(f"Similaridade: {r['similaridade']} · Nota: {r.get('score', '')}")
-        col2.caption(r.get("genres", ""))
+        col2.write(f"Similaridade: {float(r['similaridade']):.3f} · Nota: {r.get('score', '')}")
+        col2.caption(str(r.get("genres", "")).replace("|", ", "))
         col2.write(str(r.get("synopsis", ""))[:400])
