@@ -96,6 +96,19 @@ div[data-testid="stVerticalBlockBorderWrapper"] {
     backdrop-filter: blur(4px);
 }
 
+/* CARTÕES DOS RESULTADOS */
+div[data-testid="stVerticalBlockBorderWrapper"] {
+    background: rgba(10, 10, 10, 0.78) !important;
+    border: 1px solid rgba(255, 255, 255, 0.15) !important;
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+}
+
+/* FUNDO INTERNO DOS CARTÕES */
+div[data-testid="stVerticalBlockBorderWrapper"] > div {
+    background: transparent !important;
+}
+
 /* IMAGENS DOS MANGÁS */
 
 div[data-testid="stImage"] img {
