@@ -31,7 +31,7 @@ def cartao(r, similaridade=True):
 
 df, model, emb = dados()
 
-st.title("📚 Recomendador de Mangá")
+st.title("Recomendador de Mangá")
 busca = st.text_input("Digite um título, trecho de sinopse ou descrição (português ou inglês)").strip()
 
 if busca:
