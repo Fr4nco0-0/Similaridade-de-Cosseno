@@ -1,156 +1,32 @@
-/* ESTILO DO SITE*/
-
-:root {
-    --background: #0c0c0c;
-    --surface: #171717;
-    --surface-hover: #222222;
-    --border: #303030;
-    --text: #f5f5f5;
-    --muted: #999999;
-    --white: #ffffff;
-}
-
-/* CONFIGURAÇÕES GERAIS */
-
-.stApp {
-    background-color: var(--background);
-    color: var(--text);
-}
-
-header[data-testid="stHeader"] {
-    background: transparent;
-}
-
-.block-container {
-    max-width: 1150px;
-    padding-top: 3rem;
-    padding-bottom: 4rem;
-}
-
-/* TÍTULOS */
-
-h1 {
-    color: var(--white) !important;
-    font-size: 42px !important;
-    font-weight: 750 !important;
-    letter-spacing: -2px;
-    margin-bottom: 10px !important;
-}
-
-h2, h3 {
-    color: var(--white) !important;
-    font-weight: 650 !important;
-    letter-spacing: -0.5px;
-}
-
-/* TEXTO */
-
-p, label, .stMarkdown {
-    color: var(--text);
-}
-
-/* CAMPO DE PESQUISA */
-
-div[data-testid="stTextInput"] {
-    margin-top: 25px;
-    margin-bottom: 35px;
-}
-
-div[data-testid="stTextInput"] input {
-    background-color: var(--surface) !important;
-    color: var(--white) !important;
-    border: 1px solid var(--border) !important;
-    border-radius: 10px !important;
-    padding: 15px !important;
-    font-size: 16px !important;
-    transition: 0.25s ease;
-}
-
-div[data-testid="stTextInput"] input:focus {
-    border-color: #aaaaaa !important;
-    box-shadow: 0 0 0 1px #aaaaaa !important;
-}
-
-div[data-testid="stTextInput"] input::placeholder {
-    color: #777777 !important;
-}
-
-/* RESULTADOS */
-
-div[data-testid="stVerticalBlockBorderWrapper"] {
-    background-color: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-}
-
-/* IMAGENS DOS MANGÁS */
-
-div[data-testid="stImage"] img {
-    border-radius: 8px;
-    object-fit: contain;
-}
-
-/* SEPARADORES */
-
-hr {
-    border-color: var(--border) !important;
-    margin: 30px 0 !important;
-}
-
-/* INFORMAÇÕES SECUNDÁRIAS */
-
-.stCaption {
-    color: var(--muted) !important;
-}
-
-/* BOTÕES */
-
-.stButton button {
-    background-color: var(--white);
-    color: #111111;
-    border: none;
-    border-radius: 7px;
-    font-weight: 650;
-    transition: 0.2s;
-}
-
-.stButton button:hover {
-    background-color: #cccccc;
-    color: #000000;
-    border: none;
-}
-
-/* SCROLLBAR */
-
-::-webkit-scrollbar {
-    width: 8px;
-}
-
-::-webkit-scrollbar-track {
-    background: var(--background);
-}
-
-::-webkit-scrollbar-thumb {
-    background: #444444;
-    border-radius: 10px;
-}
-
-/*CAPAS NSFW*/
+/* CAPAS NSFW */
 
 .capa-nsfw {
     position: relative;
     display: block;
-    width: 140px;
+    width: 100%;
     overflow: hidden;
     border-radius: 8px;
+    cursor: pointer;
+}
+
+.capa-nsfw input[type="checkbox"] {
+    display: none !important;
 }
 
 .capa-nsfw img {
     display: block;
     width: 100%;
     height: auto;
-    filter: blur(15px) !important;
+    border-radius: 8px;
+    filter: blur(18px) !important;
     transform: scale(1.1);
+    transition: filter 0.3s ease, transform 0.3s ease;
+}
+
+/* Ao clicar, tira o blur */
+.capa-nsfw input[type="checkbox"]:checked ~ img {
+    filter: blur(0px) !important;
+    transform: scale(1);
 }
 
 .capa-nsfw .badge-18 {
@@ -165,16 +41,11 @@ hr {
     padding: 8px 14px;
     border-radius: 6px;
     z-index: 2;
+    pointer-events: none;
+    transition: opacity 0.2s ease;
 }
 
-/* RESPONSIVIDADE */
-
-@media (max-width: 768px) {
-    .block-container {
-        padding: 2rem 1rem;
-    }
-
-    h1 {
-        font-size: 32px !important;
-    }
+/* Ao clicar, esconde o +18 */
+.capa-nsfw input[type="checkbox"]:checked ~ .badge-18 {
+    opacity: 0;
 }
