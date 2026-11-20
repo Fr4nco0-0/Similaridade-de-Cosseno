@@ -104,6 +104,10 @@ div[data-testid="stVerticalBlockBorderWrapper"] {
     border-radius: 12px !important;
 }
 
+div[data-testid="stContainer"] {
+    background-color: red !important;
+}
+
 /* IMAGENS DOS MANGÁS */
 
 div[data-testid="stImage"] img {
