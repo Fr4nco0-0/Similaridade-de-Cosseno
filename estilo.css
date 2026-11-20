@@ -91,7 +91,7 @@ div[data-testid="stTextInput"] input::placeholder {
 
 div[data-testid="stVerticalBlockBorderWrapper"] {
     background-color: var(--surface);
-    border: 1px solid var(--border);
+    border: 5px solid var(--border);
     border-radius: 12px;
 }
 
