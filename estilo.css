@@ -87,6 +87,14 @@ div[data-testid="stTextInput"] input::placeholder {
     color: #777777 !important;
 }
 
+/*CARDS*/
+
+div[data-testid="stVerticalBlockBorderWrapper"] {
+    background-color: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+}
+
 /* IMAGENS DOS MANGÁS */
 
 div[data-testid="stImage"] img {
