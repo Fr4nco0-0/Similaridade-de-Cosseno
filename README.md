@@ -9,4 +9,4 @@
 
 ## Site
 
-https://atqqq7yny3sernrkiyrhyp.streamlit.app/
+https://recomendador-manga.streamlit.app/
