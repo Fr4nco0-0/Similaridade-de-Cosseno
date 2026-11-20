@@ -1,4 +1,4 @@
-/* ESTILO DO SITE */
+/* ESTILO DO SITE*/
 
 :root {
     --background: #0c0c0c;
@@ -81,13 +81,6 @@ div[data-testid="stVerticalBlockBorderWrapper"] {
     background-color: var(--surface);
     border: 1px solid var(--border);
     border-radius: 12px;
-    padding: 12px;
-    margin-bottom: 16px;
-    transition: border-color 0.2s ease;
-}
-
-div[data-testid="stVerticalBlockBorderWrapper"]:hover {
-    border-color: #555555;
 }
 
 /* IMAGENS DOS MANGÁS */
@@ -95,52 +88,6 @@ div[data-testid="stVerticalBlockBorderWrapper"]:hover {
 div[data-testid="stImage"] img {
     border-radius: 8px;
     object-fit: contain;
-}
-
-/* CAPAS COM CONTEÚDO +18 */
-
-.capa-adulto {
-    position: relative;
-    width: 140px;
-    overflow: hidden;
-    border-radius: 8px;
-    background-color: var(--surface);
-}
-
-.capa-adulto img {
-    width: 100%;
-    height: auto;
-    display: block;
-
-    filter: blur(12px);
-    transform: scale(1.08);
-
-    transition: filter 0.3s ease;
-}
-
-/* SELO DE CLASSIFICAÇÃO 18+ */
-
-.aviso-adulto {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-
-    transform: translate(-50%, -50%);
-
-    background: rgba(180, 20, 20, 0.95);
-    color: var(--white);
-
-    font-size: 20px;
-    font-weight: 800;
-
-    padding: 8px 14px;
-    border-radius: 6px;
-
-    border: 1px solid rgba(255, 255, 255, 0.25);
-
-    z-index: 2;
-    letter-spacing: 1px;
-    white-space: nowrap;
 }
 
 /* SEPARADORES */
@@ -197,16 +144,5 @@ hr {
 
     h1 {
         font-size: 32px !important;
-    }
-}
-
-@media (max-width: 600px) {
-    .capa-adulto {
-        width: 110px;
-    }
-
-    .aviso-adulto {
-        font-size: 16px;
-        padding: 6px 10px;
     }
 }
