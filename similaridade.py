@@ -1,43 +1,50 @@
 import os
+
 import numpy as np
 import pandas as pd
 from sentence_transformers import SentenceTransformer
 
-df = pd.read_parquet("manga_limpo.parquet")
+MODELO = "paraphrase-multilingual-MiniLM-L12-v2"
+COLUNAS = ["title", "score", "genres", "synopsis", "image_url"]
 
-model = SentenceTransformer("paraphrase-multilingual-MiniLM-L12-v2")
-model.max_seq_length = 128
 
-# embeddings: gera só se ainda não existirem
-if os.path.exists("embeddings.npy") and len(np.load("embeddings.npy", mmap_mode="r")) == len(df):
-    emb = np.load("embeddings.npy")
-else:
-    emb = model.encode(df["synopsis"].tolist(), batch_size=64,
-                       normalize_embeddings=True, show_progress_bar=True)
-    np.save("embeddings.npy", emb)
+def carregar():
+    """Lê o dataset, o modelo e os embeddings (embeddings.npz em float16; gera só se não existir)."""
+    df = pd.read_parquet("manga_limpo.parquet").reset_index(drop=True)
+    model = SentenceTransformer(MODELO)
+    model.max_seq_length = 128
 
-# busca livre: título, trecho de sinopse, palavra ou descrição (português ou inglês)
-while True:
-    busca = input("\nDigite um título, trecho da sinopse ou descrição (ou 'sair'): ").strip()
-    if busca.lower() == "sair":
-        break
-    if not busca:
-        continue
-
-    # se for exatamente o título de um mangá, usa o vetor dele e tira ele mesmo da lista
-    igual = (df["title"].str.lower() == busca.lower()) | (df["title_english"].str.lower() == busca.lower())
-    if igual.any():
-        i = df.index[igual][0]
-        print(f"\nMais parecidos com: {df.loc[i, 'title']}")
-        q = emb[i]
-        pular = i
+    if os.path.exists("embeddings.npz") and len(np.load("embeddings.npz")["emb"]) == len(df):
+        emb = np.load("embeddings.npz")["emb"]
     else:
-        print("\nMais parecidos com o que você digitou:")
-        q = model.encode(busca, normalize_embeddings=True)
-        pular = None
+        emb = model.encode(df["synopsis"].tolist(), batch_size=64,
+                           normalize_embeddings=True, show_progress_bar=True)
+        np.savez_compressed("embeddings.npz", emb=emb.astype(np.float16))
+    return df, model, emb.astype(np.float32)
 
-    sims = emb @ q                       # normalizado: produto escalar = cosseno
-    top = [j for j in sims.argsort()[::-1] if j != pular][:10]
-    res = df.loc[top, ["title", "score"]].copy()
+
+def recomendar(busca, df, model, emb, k=10):
+    """Devolve (rótulo, DataFrame com os k mais parecidos com a busca)."""
+    b = busca.lower()
+    igual = df["title"].fillna("").str.lower() == b
+    if "title_english" in df.columns:
+        igual |= df["title_english"].fillna("").str.lower() == b
+
+    if igual.any():
+        i = int(df.index[igual][0])
+        q, pular = emb[i], i
+        rotulo = f"Mais parecidos com: {df.loc[i, 'title']}"
+    else:
+        q = model.encode(busca, normalize_embeddings=True).astype(np.float32)
+        pular = None
+        rotulo = "Mais parecidos com o que você digitou:"
+
+    sims = emb @ q  # normalizado: produto escalar = cosseno
+    top = [int(j) for j in sims.argsort()[::-1] if j != pular][:k]
+
+    res = df.loc[top, [c for c in COLUNAS if c in df.columns]].copy()
+    if "genres" in res.columns:
+        res["genres"] = res["genres"].apply(
+            lambda g: ", ".join(g) if isinstance(g, (list, tuple, np.ndarray)) else g)
     res["similaridade"] = sims[top].round(3)
-    print(res.to_string())
+    return rotulo, res.fillna("")
