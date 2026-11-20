@@ -99,10 +99,6 @@ div[data-testid="stVerticalBlockBorderWrapper"] {
 /* CARTÕES DOS MANGÁS */
 
 div[data-testid="stVerticalBlockBorderWrapper"] {
-    background: red !important;
-}
-
-div[data-testid="stVerticalBlockBorderWrapper"] {
     background-color: rgba(10, 10, 10, 0.95) !important;
     border: 1px solid rgba(255, 255, 255, 0.15) !important;
     border-radius: 12px !important;
