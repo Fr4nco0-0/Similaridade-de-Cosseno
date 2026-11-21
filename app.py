@@ -46,7 +46,7 @@ def cartao(r, similaridade=True):
         if len(sinopse) > 400:
             col2.write(sinopse[:400] + "...")
             with col2.expander("Ler sinopse completa"):
-                col2.write(sinopse)
+                st.write(sinopse)
         else:
             col2.write(sinopse)
 df, model, emb = dados()
