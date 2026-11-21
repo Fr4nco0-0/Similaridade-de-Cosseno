@@ -223,3 +223,28 @@ hr {
         font-size: 32px !important;
     }
 }
+
+/* RODAPÉ */
+
+.rodape {
+    margin-top: 60px;
+    padding: 24px 20px;
+    border-top: 1px solid var(--border);
+    background-color: rgba(12, 12, 12, 0.85);
+    backdrop-filter: blur(6px);
+    border-radius: 12px;
+    text-align: center;
+    color: var(--muted);
+    font-size: 13px;
+    line-height: 1.7;
+}
+
+.rodape a {
+    color: var(--white);
+    text-decoration: none;
+    font-weight: 600;
+}
+
+.rodape a:hover {
+    text-decoration: underline;
+}
