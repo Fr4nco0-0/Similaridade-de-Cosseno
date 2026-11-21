@@ -23,11 +23,13 @@ def cartao(r, similaridade=True):
             if r.get("mais_18", False):
                 col1.markdown(
                     f"""
-                    <label class="capa-nsfw" title="Clique para revelar">
-                        <input type="checkbox">
-                        <img src="{img_url}" alt="{r.get('title', '')}">
-                        <span class="badge-18">+18</span>
-                    </label>
+                    <div class="capa-wrap">
+                        <label class="capa-nsfw" title="Clique para revelar">
+                            <input type="checkbox">
+                            <img src="{img_url}" alt="{r.get('title', '')}">
+                            <span class="badge-18">+18</span>
+                        </label>
+                    </div>
                     """,
                     unsafe_allow_html=True,
                 )
