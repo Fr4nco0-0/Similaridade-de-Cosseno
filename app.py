@@ -42,13 +42,11 @@ def cartao(r, similaridade=True):
             info = f"Similaridade: {float(r['similaridade']):.3f} · " + info
         col2.write(info)
         col2.caption(str(r.get("genres", "")).replace("|", ", "))
-        sinopse = str(r.get("synopsis", ""))
-        if len(sinopse) > 400:
-            col2.write(sinopse[:400] + "...")
-            with col2.expander("Ler sinopse completa"):
-                st.write(sinopse)
-        else:
+        sinopse = str(r.get("synopsis", "")).strip()
+        if sinopse and sinopse[-1] not in ".!\"'":
+            sinopse = sinopse.rsplit(" ", 1)[0] + "..."
             col2.write(sinopse)
+
 df, model, emb = dados()
 
 st.title("Recomendador de Mangá")
@@ -65,3 +63,14 @@ if busca:
     st.subheader(rotulo)
     for _, r in res.iterrows():
         cartao(r)
+
+st.markdown(
+    """
+    <div class="rodape">
+        Recomendador de Mangá · Similaridade do cosseno com embeddings de sinopses<br>
+        Dados e capas via MyAnimeList · Autores: Amanda da Silva Gonçalves, Gustavo Franco Mendonça Vasques e Isabelly Raizer ·
+        <a href="https://github.com/Fr4nco0-0/Similaridade-de-Cosseno" target="_blank">GitHub</a> · @ 2026
+    </div>
+    """,
+    unsafe_allow_html=True,
+)
