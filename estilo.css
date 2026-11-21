@@ -160,7 +160,7 @@ hr {
     height: auto;
     border-radius: 8px;
     filter: blur(30px) !important;
-    transform: scale(1.1);
+    transform: scale(1);
     transition: filter 0.3s ease, transform 0.3s ease;
 }
 
