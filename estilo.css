@@ -94,6 +94,22 @@ div[data-testid="stImage"] img {
     border-radius: 8px;
     object-fit: contain;
 }
+
+/* CARTÕES DOS RESULTADOS */
+div[data-testid="stVerticalBlockBorderWrapper"] {
+    background-color: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 15px;
+    margin-bottom: 15px;
+    transition: border-color 0.2s ease, background-color 0.2s ease;
+}
+
+div[data-testid="stVerticalBlockBorderWrapper"]:hover {
+    border-color: #555555;
+    background-color: var(--surface-hover);
+}
+
 /* SEPARADORES */
 
 hr {
