@@ -16,7 +16,7 @@ def dados():
 
 
 def cartao(r, similaridade=True):
-    with st.container(border=True):
+    with st.container(border=False):
         col1, col2 = st.columns([1, 4])
         img_url = str(r.get("image_url", ""))
         if img_url.startswith("http"):
