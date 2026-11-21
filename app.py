@@ -42,28 +42,30 @@ def cartao(r, similaridade=True):
             info = f"Similaridade: {float(r['similaridade']):.3f} · " + info
         col2.write(info)
         col2.caption(str(r.get("genres", "")).replace("|", ", "))
+
         sinopse = str(r.get("synopsis", "")).strip()
-if not sinopse:
-    col2.write("Sinopse não disponível.")
-else:
-    # Limpa a última palavra quebrada caso o dataset tenha cortado o texto no meio
-    incompleta = sinopse[-1] not in ".!?\"'"
-    if incompleta:
-        sinopse = sinopse.rsplit(" ", 1)[0] + "... *(fim da prévia)*"
-    # Se passar de 400 caracteres, mostra resumo clicável para expandir
-    if len(sinopse) > 400:
-        resumo = sinopse[:400].rsplit(" ", 1)[0]
-        col2.markdown(
-            f"""
-            <details class="sinopse-toggle">
-                <summary>{resumo}<span class="ver-mais">... (ler mais)</span></summary>
-                <p>{sinopse}</p>
-            </details>
-            """,
-            unsafe_allow_html=True,
-        )
-    else:
-        col2.markdown(sinopse)
+        if not sinopse:
+            col2.write("Sinopse não disponível.")
+        else:
+            # Limpa a última palavra quebrada caso o dataset tenha cortado o texto no meio
+            incompleta = sinopse[-1] not in ".!?\"'"
+            if incompleta:
+                sinopse = sinopse.rsplit(" ", 1)[0] + "... <em>(fim da prévia)</em>"
+
+            # Se passar de 400 caracteres, mostra resumo clicável para expandir
+            if len(sinopse) > 400:
+                resumo = sinopse[:400].rsplit(" ", 1)[0]
+                col2.markdown(
+                    f"""
+                    <details class="sinopse-toggle">
+                        <summary>{resumo}<span class="ver-mais">... (ler mais)</span></summary>
+                        <p>{sinopse}</p>
+                    </details>
+                    """,
+                    unsafe_allow_html=True,
+                )
+            else:
+                col2.markdown(sinopse, unsafe_allow_html=True)
 
 
 df, model, emb = dados()
@@ -88,7 +90,7 @@ st.markdown(
     <div class="rodape">
         Recomendador de Mangá · Similaridade do cosseno com embeddings de sinopses<br>
         Dados e capas via MyAnimeList · Autores: Amanda da Silva Gonçalves, Gustavo Franco Mendonça Vasques e Isabelly Raizer ·
-        <a href="https://github.com/Fr4nco0-0/Similaridade-de-Cosseno" target="_blank">GitHub</a> · @ 2026
+        <a href="https://github.com/Fr4nco0-0/Similaridade-de-Cosseno" target="_blank">GitHub</a> · © 2026
     </div>
     """,
     unsafe_allow_html=True,
