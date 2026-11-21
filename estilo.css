@@ -157,6 +157,10 @@ hr {
 
 /* CAPAS NSFW */
 
+.capa-wrap {
+    padding-bottom: 32px;
+}
+
 .capa-nsfw {
     position: relative;
     display: block;
@@ -164,6 +168,7 @@ hr {
     overflow: hidden;
     border-radius: 8px;
     cursor: pointer;
+    background: #1a1a1a;
 }
 
 .capa-nsfw input[type="checkbox"] {
@@ -175,7 +180,7 @@ hr {
     width: 100%;
     height: auto;
     border-radius: 8px;
-    filter: blur(30px) !important;
+    filter: blur(16px) !important;
     transform: scale(1.1);
     transition: filter 0.3s ease, transform 0.3s ease;
 }
