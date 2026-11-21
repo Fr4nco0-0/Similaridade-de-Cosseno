@@ -90,7 +90,7 @@ st.markdown(
     """
     <div class="rodape">
         Recomendador de Mangá · Similaridade do cosseno com embeddings de sinopses<br>
-        Dados e capas via MyAnimeList · Autores: Amanda da Silva Gonçalves, Gustavo Franco Mendonça Vasques e Isabelly Raizer ·
+        Dados e capas via MyAnimeList(<a href="https://myanimelist.net" target="_blank">ver site</a>) · Autores: Amanda da Silva Gonçalves, Gustavo Franco Mendonça Vasques e Isabelly Raizer ·
         <a href="https://github.com/Fr4nco0-0/Similaridade-de-Cosseno" target="_blank">GitHub</a> · © 2026
     </div>
     """,
