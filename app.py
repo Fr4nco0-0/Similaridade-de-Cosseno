@@ -43,9 +43,12 @@ def cartao(r, similaridade=True):
         col2.write(info)
         col2.caption(str(r.get("genres", "")).replace("|", ", "))
         sinopse = str(r.get("synopsis", "")).strip()
-        if sinopse and sinopse[-1] not in ".!\"'":
-            sinopse = sinopse.rsplit(" ", 1)[0] + "..."
-            col2.write(sinopse)
+        if len(sinopse) > 400:
+            sinopse = sinopse[:400].rsplit(" ", 1)[0] + "..."
+        elif sinopse and sinopse[-1] not in ".!?\"'":
+             sinopse = sinopse.rsplit(" ", 1)[0] + "..."
+        col2.write(sinopse if sinopse else "Sinopse não disponível.")
+
 
 df, model, emb = dados()
 
