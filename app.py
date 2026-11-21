@@ -71,8 +71,8 @@ def cartao(r, similaridade=True):
 df, model, emb = dados()
 
 st.title("Recomendador de Mangá")
-busca = st.text_input("Digite um título, trecho de sinopse ou descrição (português ou inglês"), 
-placeholder="Dica: quanto mais detalhada a descrição, mais precisa será a recomendação e mais próximo de 1 será o resultado!").strip()
+busca = st.text_input("Digite um título, trecho de sinopse ou descrição (português ou inglês)", 
+placeholder="Dica: quanto mais detalhada a descrição, mais precisa será a recomendação e mais próximo de 1 será o resultado!",).strip()
 
 if busca:
     achados = buscar_titulo(busca, df)
