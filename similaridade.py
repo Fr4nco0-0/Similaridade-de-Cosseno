@@ -7,9 +7,9 @@ from sentence_transformers import SentenceTransformer
 MODELO = "paraphrase-multilingual-MiniLM-L12-v2"
 COLUNAS = ["title", "score", "genres", "themes", "synopsis", "image_url"]
 
-# Termos bloqueados em gêneros/temas (correspondência exata ou palavra inteira)
+# Termos bloqueados em gêneros/temas (busca por trecho)
 TERMOS_BLOQUEADOS = [
-    "hentai", "erotica", "ecchi", "smut", "adult", "gore", 
+    "hentai", "erotica", "ecchi", "smut", "gore", 
     "sexual violence", "incest", "harem", "reverse harem"
 ]
 
