@@ -224,6 +224,38 @@ hr {
     }
 }
 
+/* SINOPSE EXPANSÍVEL */
+
+.sinopse-toggle summary {
+    list-style: none;
+    cursor: pointer;
+    color: var(--text);
+    line-height: 1.55;
+}
+
+.sinopse-toggle summary::-webkit-details-marker {
+    display: none;
+}
+
+.sinopse-toggle .ver-mais {
+    color: var(--muted);
+    font-weight: 600;
+}
+
+.sinopse-toggle .ver-mais:hover {
+    color: var(--white);
+    text-decoration: underline;
+}
+
+.sinopse-toggle[open] summary {
+    display: none;
+}
+
+.sinopse-toggle p {
+    margin: 0;
+    line-height: 1.55;
+}
+
 /* RODAPÉ */
 
 .rodape {
