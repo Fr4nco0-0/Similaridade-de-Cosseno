@@ -43,11 +43,27 @@ def cartao(r, similaridade=True):
         col2.write(info)
         col2.caption(str(r.get("genres", "")).replace("|", ", "))
         sinopse = str(r.get("synopsis", "")).strip()
-        if len(sinopse) > 400:
-            sinopse = sinopse[:400].rsplit(" ", 1)[0] + "..."
-        elif sinopse and sinopse[-1] not in ".!?\"'":
-             sinopse = sinopse.rsplit(" ", 1)[0] + "..."
-        col2.write(sinopse if sinopse else "Sinopse não disponível.")
+if not sinopse:
+    col2.write("Sinopse não disponível.")
+else:
+    # Limpa a última palavra quebrada caso o dataset tenha cortado o texto no meio
+    incompleta = sinopse[-1] not in ".!?\"'"
+    if incompleta:
+        sinopse = sinopse.rsplit(" ", 1)[0] + "... *(fim da prévia)*"
+    # Se passar de 400 caracteres, mostra resumo clicável para expandir
+    if len(sinopse) > 400:
+        resumo = sinopse[:400].rsplit(" ", 1)[0]
+        col2.markdown(
+            f"""
+            <details class="sinopse-toggle">
+                <summary>{resumo}<span class="ver-mais">... (ler mais)</span></summary>
+                <p>{sinopse}</p>
+            </details>
+            """,
+            unsafe_allow_html=True,
+        )
+    else:
+        col2.markdown(sinopse)
 
 
 df, model, emb = dados()
