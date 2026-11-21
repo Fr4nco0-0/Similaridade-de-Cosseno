@@ -280,3 +280,9 @@ hr {
 .rodape a:hover {
     text-decoration: underline;
 }
+
+/* ESCONDE APENAS O BOTÃO FORK */
+[data-testid="stToolbarActions"],
+.stAppDeployButton {
+    display: none !important;
+}
