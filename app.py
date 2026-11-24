@@ -61,7 +61,7 @@ def cartao(r, similaridade=True):
                 )
             else:
                 col2.markdown(sinopse, unsafe_allow_html=True)
-                autores = str(r.get("authors", "")).strip()
+        autores = str(r.get("authors", "")).strip()
         if autores:
             col3.markdown("**Autor**")
             for a in autores.split("|"):
