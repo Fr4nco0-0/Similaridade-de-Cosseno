@@ -214,8 +214,6 @@ with col_resultados:
             .sort_values("_nota", ascending=False)
             .head(10)
         )
-        st.subheader("Mangás mais bem avaliados")
-        lista(destaque, similaridade=False)
 st.markdown(
     """
     <div class="rodape">
