@@ -76,15 +76,25 @@ def cartao(r, similaridade=True):
                 col3.write(a.strip())
 
 
+def _txt(valor, n, sep):
+    itens = [t.strip() for t in str(valor).split("|") if t.strip()]
+    return html.escape(sep.join(itens[:n]))
+
+
 def cartao_compacto(r):
-    with st.container(border=True):
+    with st.container(border=True, height=420):  # altura fixa: todos iguais
         capa(st, r)
-        st.markdown(f"**{r['title']}**")
-        st.write(f"Nota: {r.get('score', '')}")
-        st.caption(str(r.get("genres", "")).replace("|", ", "))
-        autores = str(r.get("authors", "")).strip()
-        if autores:
-            st.caption(autores.replace("|", ", "))
+        nota = r.get("score", "")
+        nota = "—" if str(nota) in ("", "nan", "None") else nota
+        st.markdown(
+            f"""
+            <div class="cc-titulo">{html.escape(str(r['title']))}</div>
+            <div class="cc-nota">Nota: {nota}</div>
+            <div class="cc-meta">{_txt(r.get('genres', ''), 3, ', ')}</div>
+            <div class="cc-meta">{_txt(r.get('authors', ''), 2, ' · ')}</div>
+            """,
+            unsafe_allow_html=True,
+        )
 
 
 def grade(res, por_linha=5):
