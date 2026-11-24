@@ -170,6 +170,7 @@ def lista(res, similaridade=True):
 
 
 st.title("Recomendador de Mangá")
+st.caption("As recomendações são ordenadas por sua similaridade entre as sinopses. Use os filtros de gêneros e temas para refinar a sua busca.")
 busca = st.text_input("Digite um título, trecho de sinopse ou descrição",
 placeholder="Dica: quanto mais detalhada a descrição, mais precisa será a recomendação. Valores perto de 0,4 a 0,6 já indicam boa semelhança.",).strip()
 col_filtros, col_resultados = st.columns([1, 3], gap="large")
