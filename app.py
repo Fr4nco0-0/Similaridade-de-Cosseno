@@ -37,7 +37,9 @@ def cartao(r, similaridade=True):
         col1, col2, col3 = st.columns([1.2, 4, 1.4])
         capa(col1, r)
         col2.markdown(f"### {r['title']}")
-        info = f"Nota: {r.get('score', '')}"
+        nota = r.get("score", "")
+        nota = "—" if str(nota).strip() in ("", "nan", "None", "0", "0.0") else nota
+        info = f"Nota: {nota}"
         if similaridade:
             info = f"Similaridade: {float(r['similaridade']):.3f} · " + info
         col2.write(info)
