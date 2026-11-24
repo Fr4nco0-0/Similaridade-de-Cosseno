@@ -1,17 +1,17 @@
 import os
 import pandas as pd
 import streamlit as st
-
-from similaridade import buscar_titulo, carregar, recomendar
+from similaridade import _formatar, buscar_titulo, carregar, recomendar
 
 st.set_page_config(page_title="Recomendador de Mangá", layout="wide")
-
 if os.path.exists("estilo.css"):
     st.markdown(f"<style>{open('estilo.css', encoding='utf-8').read()}</style>", unsafe_allow_html=True)
+
 
 @st.cache_resource
 def dados():
     return carregar()
+
 
 def cartao(r, similaridade=True):
     with st.container(border=True):
@@ -33,14 +33,12 @@ def cartao(r, similaridade=True):
                 )
             else:
                 col1.image(img_url)
-
         col2.markdown(f"### {r['title']}")
         info = f"Nota: {r.get('score', '')}"
         if similaridade:
             info = f"Similaridade: {float(r['similaridade']):.3f} · " + info
         col2.write(info)
         col2.caption(str(r.get("genres", "")).replace("|", ", "))
-
         sinopse = str(r.get("synopsis", "")).strip()
         if not sinopse:
             col2.write("Sinopse não disponível.")
@@ -49,7 +47,6 @@ def cartao(r, similaridade=True):
             incompleta = sinopse[-1] not in ".!?\"'"
             if incompleta:
                 sinopse = sinopse.rsplit(" ", 1)[0] + "... <em>(fim da prévia)</em>"
-
             # Se passar de 400 caracteres, mostra resumo clicável para expandir
             if len(sinopse) > 400:
                 resumo = sinopse[:400].rsplit(" ", 1)[0]
@@ -65,11 +62,20 @@ def cartao(r, similaridade=True):
             else:
                 col2.markdown(sinopse, unsafe_allow_html=True)
 
+
 df, model, emb = dados()
 
-#AVISO +18 
+
+@st.cache_resource
+def df_completo():
+    # o df cru não tem a coluna mais_18; o _formatar a cria
+    return df if "mais_18" in df.columns else _formatar(df.copy())
+
+
+# AVISO +18
 if "maior_18" not in st.session_state:
     st.session_state.maior_18 = None  # None = ainda não respondeu
+
 
 @st.dialog("Você tem 18 anos ou mais?")
 def aviso_idade():
@@ -94,16 +100,19 @@ def aviso_idade():
         st.session_state.maior_18 = False
         st.rerun()
 
+
 def filtrar(d):
     # só mostra +18 para quem confirmou; sem resposta ou "não" = oculta
     if st.session_state.maior_18:
         return d
     return d[~d["mais_18"].astype(bool)]
 
+
 if st.session_state.maior_18 is None:
     aviso_idade()
 
-#FILTROS DE GÊNERO E TEMA
+
+# FILTROS DE GÊNERO E TEMA
 @st.cache_data
 def opcoes(_df, coluna):
     if coluna not in _df.columns:
@@ -115,15 +124,39 @@ def opcoes(_df, coluna):
             if t:
                 itens.add(t)
     return sorted(itens)
+
+
 def contem_todos(d, coluna, escolhidos):
     if not escolhidos or coluna not in d.columns:
         return d
+
     def ok(v):
         itens = {t.strip() for t in str(v).split("|")}
         return all(e in itens for e in escolhidos)
+
     return d[d[coluna].apply(ok)]
+
+
 def aplicar_filtros(d, generos, temas):
     return contem_todos(contem_todos(d, "genres", generos), "themes", temas)
+
+
+def limpar_filtros():
+    for k in list(st.session_state):
+        if k.startswith(("g_", "t_")):
+            st.session_state[k] = False
+
+
+def checklist(titulo, itens, prefixo):
+    st.markdown(f"**{titulo}**")
+    escolhidos = []
+    with st.container(height=220):
+        for item in itens:
+            if st.checkbox(item, key=f"{prefixo}_{item}"):
+                escolhidos.append(item)
+    return escolhidos
+
+
 def lista(res, similaridade=True):
     if len(res) == 0:
         st.info("Nenhum mangá encontrado com esses filtros.")
@@ -135,6 +168,7 @@ def lista(res, similaridade=True):
     for _, r in res.iterrows():
         cartao(r, similaridade=similaridade)
 
+
 st.title("Recomendador de Mangá")
 busca = st.text_input("Digite um título, trecho de sinopse ou descrição",
 placeholder="Dica: quanto mais detalhada a descrição, mais precisa será a recomendação e mais próximo de 1 será o resultado!",).strip()
@@ -143,8 +177,9 @@ col_filtros, col_resultados = st.columns([1, 3], gap="large")
 with col_filtros:
     with st.container(border=True):
         st.markdown("### Gêneros e temas")
-        generos = st.multiselect("Gêneros", opcoes(df, "genres"), placeholder="Escolha um ou mais")
-        temas = st.multiselect("Temas", opcoes(df, "themes"), placeholder="Escolha um ou mais")
+        generos = checklist("Gêneros", opcoes(df, "genres"), "g")
+        temas = checklist("Temas", opcoes(df, "themes"), "t")
+        st.button("Limpar filtros", on_click=limpar_filtros, use_container_width=True)
         st.caption("Os resultados precisam ter todos os itens escolhidos.")
 with col_resultados:
     if busca:
@@ -153,9 +188,8 @@ with col_resultados:
             st.subheader("Títulos encontrados")
             for _, r in achados.iterrows():
                 cartao(r, similaridade=False)
-        rotulo, res = recomendar(busca, df, model, emb)
+        rotulo, res = recomendar(busca, df, model, emb, k=300): k=300
         res = aplicar_filtros(filtrar(res), generos, temas)
-
         # tira das recomendações o que já apareceu na busca direta
         if len(achados):
             res = res[~res["title"].isin(achados["title"])]
@@ -163,7 +197,7 @@ with col_resultados:
         st.subheader(rotulo)
         lista(res)
     elif generos or temas:  # sem busca: mostra as melhores notas dentro dos filtros
-        res = aplicar_filtros(filtrar(df), generos, temas)
+        res = aplicar_filtros(filtrar(df_completo()), generos, temas): df_completo()
         res = (
             res.assign(_nota=pd.to_numeric(res["score"], errors="coerce"))
             .sort_values("_nota", ascending=False)
