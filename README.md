@@ -1,127 +1,113 @@
-## Dataset / Similaridade de Cosseno / Informações gerais
-
-- [Base filtrada (Parquet)](manga_limpo.parquet): Base para a Similaridade de Cosseno
-- Fonte do Dataset: [Anime & Manga Analytics Dataset](https://www.kaggle.com/datasets/patelris/anime-and-manga-dataset-2026)
-- Último update: 24 de abril de 2026
-- Fonte dos dados: [MyAnimeList](https://myanimelist.net) via [Jikan API](https://jikan.moe)
-
----------
-
-## Site
-
-https://recomendador-manga.streamlit.app/
 # Recomendador de Mangás — Similaridade de Cosseno
+
+Aplicação web interativa para busca e recomendação semântica de mangás utilizando Processamento de Linguagem Natural (PLN).
+
+- **Aplicação online:** [recomendador-manga.streamlit.app](https://recomendador-manga.streamlit.app/)
+- **Base filtrada:** [`manga_limpo.parquet`](manga_limpo.parquet)
+- **Fonte do Dataset:** [Anime & Manga Analytics Dataset](https://www.kaggle.com/datasets/patelris/anime-and-manga-dataset-2026) *(último update: 24 de abril de 2026)*
+- **Origem dos dados:** [MyAnimeList](https://myanimelist.net) via [Jikan API](https://jikan.moe)
+
+---
 
 ## 1. Sobre o projeto
 
-Este projeto implementa um sistema de recomendação de mangás utilizando Processamento de Linguagem Natural (PLN) e Similaridade de Cosseno.
+Este projeto implementa um sistema de recomendação de mangás utilizando Processamento de Linguagem Natural (PLN) e Similaridade de Cosseno. A aplicação analisa as sinopses das obras para identificar conteúdos semanticamente semelhantes e recomendar mangás relacionados à busca realizada pelo usuário.
 
-A aplicação analisa as sinopses das obras para identificar conteúdos semanticamente semelhantes e recomendar mangás relacionados à busca realizada pelo usuário.
+### Principais funcionalidades
+- **Busca por título e descrição:** Pesquisa direta por título (original ou em inglês) ou por trechos/descrições livres em português ou inglês.
+- **Filtros combinados:** Refinamento por múltiplos gêneros e temas simultaneamente.
+- **Vitrine paginada:** Exibição dos mangás mais bem avaliados quando nenhuma busca está ativa.
+- **Moderação de conteúdo (+18):** Verificação de idade na entrada e detecção automática de conteúdo sensível em gêneros, temas e sinopses, aplicando desfoque (`blur`) clicável nas capas.
+- **Sinopses expansíveis:** Corte limpo na última palavra completa com opção de expandir para ler a prévia integral.
 
-O sistema também permite pesquisar títulos e filtrar resultados por gêneros e temas.
+---
 
 ## 2. Modelo de linguagem utilizado
 
-O projeto utiliza o modelo:
+O projeto utiliza o modelo pré-treinado:
 
 `paraphrase-multilingual-MiniLM-L12-v2`
 
-O modelo é disponibilizado pela biblioteca Sentence Transformers e transforma textos em embeddings, ou seja, vetores numéricos que representam características semânticas das sinopses.
+Disponibilizado pela biblioteca **Sentence Transformers**, o modelo transforma textos em *embeddings* (vetores numéricos densos que capturam o significado semântico das sinopses em múltiplos idiomas).
 
-A geração dos embeddings utiliza a opção `normalize_embeddings=True`, garantindo que os vetores gerados tenham norma igual a 1.
+A geração dos embeddings utiliza `normalize_embeddings=True`, garantindo que todos os vetores tenham norma euclidiana igual a 1.
+
+---
 
 ## 3. Cálculo da Similaridade de Cosseno
 
-A Similaridade de Cosseno é utilizada para medir o grau de proximidade entre os vetores que representam as sinopses dos mangás.
+A Similaridade de Cosseno mede o grau de proximidade entre o vetor da consulta e os vetores das sinopses do catálogo:
 
-A fórmula tradicional é:
+$$\text{cos}(A, B) = \frac{A \cdot B}{\|A\| \times \|B\|}$$
 
-cos(A, B) = (A · B) / (||A|| × ||B||)
+Como os embeddings estão normalizados ($\|A\| = \|B\| = 1$), o cálculo se resume ao produto escalar:
 
-Como os embeddings são normalizados, as normas dos vetores são iguais a 1. Dessa forma, o cálculo pode ser simplificado para o produto escalar:
+$$\text{similaridade}(A, B) = A \cdot B$$
 
-similaridade(A, B) = A · B
+No código, essa operação é executada de forma vetorizada com NumPy por meio de `emb @ q`, ordenando os mangás do mais próximo de `1` (maior semelhança) ao menor.
 
-No código, essa operação é realizada por meio de:
-
-`emb @ q`
-
-O resultado é utilizado para ordenar os mangás de acordo com a proximidade semântica em relação à consulta do usuário.
-
-Quanto mais próximo de 1 for o resultado, maior será a similaridade entre os conteúdos.
+---
 
 ## 4. Tecnologias utilizadas
 
-- Python
-- Streamlit
-- Pandas
-- NumPy
-- PyArrow
-- Sentence Transformers
+- **Python** (incluindo módulos nativos como `os`, `re` e `html`)
+- **Streamlit**
+- **Pandas**
+- **NumPy**
+- **PyArrow**
+- **Sentence Transformers**
+
+---
 
 ## 5. Estrutura dos arquivos
 
-- `app.py`: interface e funcionamento da aplicação Streamlit.
-- `similaridade.py`: carregamento dos dados, geração de embeddings e cálculo da similaridade.
-- `manga_limpo.parquet`: base de dados utilizada pelo recomendador.
-- `embeddings.npz`: armazenamento dos embeddings pré-calculados.
-- `estilo.css`: estilos visuais da aplicação.
-- `requirements.txt`: dependências necessárias para executar o projeto.
+- `app.py`: interface web, vitrine paginada, filtros, modal de verificação +18 e rodapé.
+- `similaridade.py`: carregamento dos dados, geração/leitura de embeddings, cálculo da similaridade e detecção de conteúdo +18.
+- `limpar.py`: script de limpeza, remoção de duplicatas e pré-processamento do dataset original.
+- `manga_limpo.parquet`: base de dados tratada utilizada pelo recomendador.
+- `embeddings.npz`: armazenamento compactado (`float16`) dos embeddings pré-calculados.
+- `estilo.css`: estilização personalizada da interface, cards, desfoque de capas +18 e responsividade.
+- `requirements.txt`: dependências externas necessárias para executar o projeto.
+
+---
 
 ## 6. Como executar o projeto localmente
 
 ### Pré-requisitos
+- Python 3.9+ instalado
+- Git instalado
+- Conexão com a internet no primeiro carregamento (para download do modelo de linguagem)
 
-- Python instalado.
-- Git instalado.
-- Acesso à internet para baixar o modelo de linguagem, caso ainda não esteja disponível no ambiente.
-
-### Instalação
+### Instalação e execução
 
 **1. Clone o repositório:**
-
 ```bash
 git clone https://github.com/Fr4nco0-0/Similaridade-de-Cosseno.git
-```
-
-**2. Acesse a pasta do projeto:**
-
-```bash
 cd Similaridade-de-Cosseno
 ```
 
-**3. Instale as dependências:**
-
+**2. Instale as dependências:**
 ```bash
 pip install -r requirements.txt
 ```
 
-**4. Inicie a aplicação:**
-
+**3. Inicie a aplicação:**
 ```bash
 streamlit run app.py
 ```
 
-Após a inicialização, a aplicação poderá ser acessada pelo endereço local informado no terminal, normalmente `http://localhost:8501`.
+Após a inicialização, acesse o endereço exibido no terminal (geralmente `http://localhost:8501`).
+
+---
 
 ## 7. Deploy
 
-O projeto está preparado para execução no Streamlit Community Cloud.
+O projeto está configurado para execução no **Streamlit Community Cloud**, apontando para a branch `main` e o arquivo principal `app.py`. O arquivo `requirements.txt` na raiz garante a instalação automática das bibliotecas necessárias.
 
-Para realizar o deploy, selecione o repositório GitHub, a branch `main` e o arquivo principal `app.py`.
+---
 
-O arquivo `requirements.txt` deve permanecer na raiz do repositório para que o ambiente instale automaticamente as bibliotecas necessárias.
+## 8. Autores
 
-O primeiro carregamento pode levar mais tempo devido à inicialização do modelo de linguagem e à leitura dos dados.
-
-## 8. Fonte dos dados
-
-A base de dados utilizada é o Anime & Manga Analytics Dataset, com informações provenientes do MyAnimeList por meio da Jikan API.
-
-- Dataset: https://www.kaggle.com/datasets/patelris/anime-and-manga-dataset-2026
-- MyAnimeList: https://myanimelist.net
-- Jikan API: https://jikan.moe
-
-## 9. Aplicação online
-
-[Recomendador de Mangás — Streamlit](https://recomendador-manga.streamlit.app/)
+- **Amanda da Silva Gonçalves**
+- **Gustavo Franco Mendonça Vasques**
+- **Isabelly Raizer**
