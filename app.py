@@ -136,7 +136,7 @@ def lista(res, similaridade=True):
         cartao(r, similaridade=similaridade)
 
 st.title("Recomendador de Mangá")
-busca = st.text_input("Digite um título, trecho de sinopse ou descrição (português ou inglês)",
+busca = st.text_input("Digite um título, trecho de sinopse ou descrição",
 placeholder="Dica: quanto mais detalhada a descrição, mais precisa será a recomendação e mais próximo de 1 será o resultado!",).strip()
 
 col_filtros, col_resultados = st.columns([1, 3], gap="large")
@@ -146,7 +146,7 @@ with col_filtros:
         generos = st.multiselect("Gêneros", opcoes(df, "genres"), placeholder="Escolha um ou mais")
         temas = st.multiselect("Temas", opcoes(df, "themes"), placeholder="Escolha um ou mais")
         st.caption("Os resultados precisam ter todos os itens escolhidos.")
-with col_resultados:  # NOVO
+with col_resultados:
     if busca:
         achados = aplicar_filtros(filtrar(buscar_titulo(busca, df)), generos, temas)
         if len(achados):
