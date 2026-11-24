@@ -188,7 +188,7 @@ with col_resultados:
             st.subheader("Títulos encontrados")
             for _, r in achados.iterrows():
                 cartao(r, similaridade=False)
-        rotulo, res = recomendar(busca, df, model, emb, k=300):
+        rotulo, res = recomendar(busca, df, model, emb, k=300)
         res = aplicar_filtros(filtrar(res), generos, temas)
         # tira das recomendações o que já apareceu na busca direta
         if len(achados):
