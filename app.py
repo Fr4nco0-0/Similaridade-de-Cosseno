@@ -216,3 +216,4 @@ def lista(res, similaridade=True):
     elif not st.session_state.maior_18:
         st.info("Resultados +18 estão ocultos. Recarregue a página para responder ao aviso de idade novamente.")
     for _, r in res.iterrows():
+        cartao(r, similaridade=similaridade)
