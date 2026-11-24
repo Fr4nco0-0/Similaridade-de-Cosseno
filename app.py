@@ -39,7 +39,7 @@ def capa(onde, r):
 
 def cartao(r, similaridade=True):
     with st.container(border=True):
-        col1, col2, col3 = st.columns([1.5, 4, 1.4])  # capa maior (era [1, 4, 1.4])
+        col1, col2, col3 = st.columns([1.2, 4, 1.4])
         capa(col1, r)
         col2.markdown(f"### {r['title']}")
         info = f"Nota: {r.get('score', '')}"
@@ -47,18 +47,23 @@ def cartao(r, similaridade=True):
             info = f"Similaridade: {float(r['similaridade']):.3f} · " + info
         col2.write(info)
         col2.caption(str(r.get("genres", "")).replace("|", ", "))
+
+        autores = str(r.get("authors", "")).strip()
+        if autores:
+            col3.markdown("**Autor**")
+            for a in autores.split("|"):
+                col3.write(a.strip())
+
         sinopse = str(r.get("synopsis", "")).strip()
         if not sinopse:
-            col2.write("Sinopse não disponível.")
+            st.write("Sinopse não disponível.")
         else:
-            # Limpa a última palavra quebrada caso o dataset tenha cortado o texto no meio
             incompleta = sinopse[-1] not in ".!?\"'"
             if incompleta:
                 sinopse = sinopse.rsplit(" ", 1)[0] + "... <em>(fim da prévia)</em>"
-            # Se passar de 400 caracteres, mostra resumo clicável para expandir
             if len(sinopse) > 400:
                 resumo = sinopse[:400].rsplit(" ", 1)[0]
-                col2.markdown(
+                st.markdown(
                     f"""
                     <details class="sinopse-toggle">
                         <summary>{resumo}<span class="ver-mais">... (ler mais)</span></summary>
@@ -68,21 +73,14 @@ def cartao(r, similaridade=True):
                     unsafe_allow_html=True,
                 )
             else:
-                col2.markdown(sinopse, unsafe_allow_html=True)
-        autores = str(r.get("authors", "")).strip()
-        if autores:
-            col3.markdown("**Autor**")
-            for a in autores.split("|"):
-                col3.write(a.strip())
-
+                st.markdown(sinopse, unsafe_allow_html=True)
 
 def _txt(valor, n, sep):
     itens = [t.strip() for t in str(valor).split("|") if t.strip()]
     return html.escape(sep.join(itens[:n]))
 
-
 def cartao_compacto(r):
-    with st.container(border=True, height=420):  # altura fixa: todos iguais
+    with st.container(border=True, height=360):
         capa(st, r)
         nota = r.get("score", "")
         nota = "—" if str(nota) in ("", "nan", "None") else nota
@@ -96,24 +94,7 @@ def cartao_compacto(r):
             unsafe_allow_html=True,
         )
 
-
-def grade(res, por_linha=5):
-    if len(res) == 0:
-        st.info("Nenhum mangá encontrado.")
-        return
-    if st.session_state.maior_18 and res["mais_18"].astype(bool).any():
-        st.warning("Alguns resultados têm conteúdo +18. As capas ficam borradas até você clicar nelas.")
-    elif not st.session_state.maior_18:
-        st.info("Resultados +18 estão ocultos. Recarregue a página para responder ao aviso de idade novamente.")
-    for i in range(0, len(res), por_linha):
-        cols = st.columns(por_linha)
-        for col, (_, r) in zip(cols, res.iloc[i:i + por_linha].iterrows()):
-            with col:
-                cartao_compacto(r)
-
-
 df, model, emb = dados()
-
 
 @st.cache_resource
 def df_completo():
@@ -124,7 +105,6 @@ def df_completo():
 # AVISO +18
 if "maior_18" not in st.session_state:
     st.session_state.maior_18 = None  # None = ainda não respondeu
-
 
 @st.dialog("Você tem 18 anos ou mais?")
 def aviso_idade():
