@@ -1,5 +1,4 @@
 /* ESTILO DO SITE*/
-
 :root {
     --background: #0c0c0c;
     --surface: #171717;
@@ -20,12 +19,10 @@
             rgba(0, 0, 0, 0.95)
         ),
         url("https://images.unsplash.com/photo-1613376023733-0a73315d9b06?w=1600&q=80");
-
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
     background-attachment: fixed;
-
     color: var(--text);
 }
 
@@ -210,6 +207,24 @@ hr {
 /* Ao clicar, esconde o +18 */
 .capa-nsfw input[type="checkbox"]:checked ~ .badge-18 {
     opacity: 0;
+}
+
+/* AVISO +18 */
+
+div[data-testid="stDialog"] {
+    background-color: rgba(0, 0, 0, 0.55);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+}
+.termo-box {
+    margin: 14px 0;
+    padding: 14px 16px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    color: var(--muted);
+    font-size: 13px;
+    line-height: 1.6;
 }
 
 /* RESPONSIVIDADE */
