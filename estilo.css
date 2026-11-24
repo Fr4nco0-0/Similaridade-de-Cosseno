@@ -212,9 +212,17 @@ hr {
 /* AVISO +18 */
 
 div[data-testid="stDialog"] {
-    background-color: rgba(0, 0, 0, 0.55);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
+    background-color: rgba(0, 0, 0, 0.65);
+    backdrop-filter: blur(28px);
+    -webkit-backdrop-filter: blur(28px);
+    align-items: center;
+}
+div[data-testid="stDialog"] button {
+    background-color: #b41414;
+    border: none;
+}
+div[data-testid="stDialog"] button p {
+    color: #fff;
 }
 .termo-box {
     margin: 14px 0;
