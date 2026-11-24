@@ -5,7 +5,7 @@ import pandas as pd
 from sentence_transformers import SentenceTransformer
 
 MODELO = "paraphrase-multilingual-MiniLM-L12-v2"
-COLUNAS = ["title", "score", "genres", "themes", "synopsis", "image_url"]
+COLUNAS = ["title", "score", "genres", "themes", "synopsis", "image_url", "authors"]
 
 # Termos bloqueados em gêneros/temas (busca por trecho)
 TERMOS_BLOQUEADOS = [
