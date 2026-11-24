@@ -1,7 +1,9 @@
 import html
 import os
+
 import pandas as pd
 import streamlit as st
+
 from similaridade import _formatar, buscar_titulo, carregar, recomendar
 
 st.set_page_config(page_title="Recomendador de Mangá", layout="wide")
@@ -14,26 +16,31 @@ def dados():
     return carregar()
 
 
+def capa(onde, r):
+    img_url = str(r.get("image_url", ""))
+    if not img_url.startswith("http"):
+        return
+    if r.get("mais_18", False):
+        onde.markdown(
+            f"""
+            <div class="capa-wrap">
+                <label class="capa-nsfw" title="Clique para revelar">
+                    <input type="checkbox">
+                    <img src="{img_url}" alt="{html.escape(str(r.get('title', '')), quote=True)}">
+                    <span class="badge-18">+18</span>
+                </label>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+    else:
+        onde.image(img_url)
+
+
 def cartao(r, similaridade=True):
     with st.container(border=True):
         col1, col2, col3 = st.columns([1, 4, 1.4])
-        img_url = str(r.get("image_url", ""))
-        if img_url.startswith("http"):
-            if r.get("mais_18", False):
-                col1.markdown(
-                    f"""
-                    <div class="capa-wrap">
-                        <label class="capa-nsfw" title="Clique para revelar">
-                            <input type="checkbox">
-                            <img src="{img_url}" alt="{r.get('title', '')}">
-                            <span class="badge-18">+18</span>
-                        </label>
-                    </div>
-                    """,
-                    unsafe_allow_html=True,
-                )
-            else:
-                col1.image(img_url)
+        capa(col1, r)
         col2.markdown(f"### {r['title']}")
         info = f"Nota: {r.get('score', '')}"
         if similaridade:
@@ -68,25 +75,6 @@ def cartao(r, similaridade=True):
             for a in autores.split("|"):
                 col3.write(a.strip())
 
-def capa(onde, r):
-    img_url = str(r.get("image_url", ""))
-    if not img_url.startswith("http"):
-        return
-    if r.get("mais_18", False):
-        onde.markdown(
-            f"""
-            <div class="capa-wrap">
-                <label class="capa-nsfw" title="Clique para revelar">
-                    <input type="checkbox">
-                    <img src="{img_url}" alt="{html.escape(str(r.get('title', '')), quote=True)}">
-                    <span class="badge-18">+18</span>
-                </label>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
-    else:
-        onde.image(img_url)
 
 def cartao_compacto(r):
     with st.container(border=True):
@@ -98,19 +86,24 @@ def cartao_compacto(r):
         if autores:
             st.caption(autores.replace("|", ", "))
 
+
 def grade(res, por_linha=5):
     if len(res) == 0:
         st.info("Nenhum mangá encontrado.")
         return
     if st.session_state.maior_18 and res["mais_18"].astype(bool).any():
         st.warning("Alguns resultados têm conteúdo +18. As capas ficam borradas até você clicar nelas.")
+    elif not st.session_state.maior_18:
+        st.info("Resultados +18 estão ocultos. Recarregue a página para responder ao aviso de idade novamente.")
     for i in range(0, len(res), por_linha):
         cols = st.columns(por_linha)
         for col, (_, r) in zip(cols, res.iloc[i:i + por_linha].iterrows()):
             with col:
                 cartao_compacto(r)
 
+
 df, model, emb = dados()
+
 
 @st.cache_resource
 def df_completo():
@@ -217,8 +210,11 @@ def lista(res, similaridade=True):
 
 st.title("Recomendador de Mangá")
 st.caption("As recomendações são ordenadas por sua similaridade entre as sinopses. Use os filtros de gêneros e temas para refinar a sua busca.")
-busca = st.text_input("Digite um título, trecho de sinopse ou descrição",
-placeholder="Dica: quanto mais detalhada a descrição, mais precisa será a recomendação. Valores perto de 0,4 a 0,6 já indicam boa semelhança.",).strip()
+busca = st.text_input(
+    "Digite um título, trecho de sinopse ou descrição",
+    placeholder="Dica: quanto mais detalhada a descrição, mais precisa será a recomendação. Valores perto de 0,4 a 0,6 já indicam boa semelhança.",
+).strip()
+
 col_filtros, col_resultados = st.columns([1, 3], gap="large")
 with col_filtros:
     with st.container(border=True):
@@ -227,6 +223,7 @@ with col_filtros:
         temas = checklist("Temas", opcoes(df, "themes"), "t")
         st.button("Limpar filtros", on_click=limpar_filtros, use_container_width=True)
         st.caption("Os resultados precisam ter todos os itens escolhidos.")
+
 with col_resultados:
     if busca:
         achados = aplicar_filtros(filtrar(buscar_titulo(busca, df)), generos, temas)
@@ -242,26 +239,25 @@ with col_resultados:
         res = res.head(10)
         st.subheader(rotulo)
         lista(res)
-    elif generos or temas:  # sem busca: mostra as melhores notas dentro dos filtros
+    elif generos or temas:  # sem busca: melhores notas dentro dos filtros
         res = aplicar_filtros(filtrar(df_completo()), generos, temas)
         res = (
             res.assign(_nota=pd.to_numeric(res["score"], errors="coerce"))
             .sort_values("_nota", ascending=False)
             .head(10)
         )
-        st.subheader("Mangás mais bem avaliados")
-        lista(destaque, similaridade=False)
         st.subheader("Melhores notas nesses filtros")
-        grade(destaque)
-    else:  # sem busca e sem filtro, mostra os mais bem avaliados
-        base = filtrar(df_completo())   # respeita o aviso +18
+        grade(res)
+    else:  # sem busca e sem filtro: grade com os mais bem avaliados
+        base = filtrar(df_completo())  # respeita o aviso +18
         destaque = (
             base.assign(_nota=pd.to_numeric(base["score"], errors="coerce"))
             .sort_values("_nota", ascending=False)
             .head(10)
         )
-        st.subheader("Melhores notas nesses filtros")
-        lista(res, similaridade=False)
+        st.subheader("Mangás mais bem avaliados")
+        grade(destaque)
+
 st.markdown(
     """
     <div class="rodape">
