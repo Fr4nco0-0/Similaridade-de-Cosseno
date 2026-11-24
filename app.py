@@ -205,6 +205,28 @@ with col_resultados:
         )
         st.subheader("Melhores notas nesses filtros")
         lista(res, similaridade=False)
+    else:  # sem busca e sem filtro, mostra os mais bem avaliados
+        base = filtrar(df_completo())   # respeita o aviso +18
+        destaque = (
+            base.assign(_nota=pd.to_numeric(base["score"], errors="coerce"))
+            .sort_values("_nota", ascending=False)
+            .head(10)
+        )
+        st.subheader("Mangás mais bem avaliados")
+        lista(destaque, similaridade=False)
+        st.subheader("Melhores notas nesses filtros")
+        lista(res, similaridade=False)
+    else:  # NOVO: sem busca e sem filtro, mostra os mais bem avaliados
+        base = filtrar(df_completo())   # respeita o aviso +18
+        destaque = (
+            base.assign(_nota=pd.to_numeric(base["score"], errors="coerce"))
+            .sort_values("_nota", ascending=False)
+            .head(10)
+        )
+        st.subheader("Mangás mais bem avaliados")
+        lista(destaque, similaridade=False)
+        st.subheader("Melhores notas nesses filtros")
+        lista(res, similaridade=False)
     else:
         st.info("Digite uma busca ou escolha gêneros e temas ao lado para começar.")
 st.markdown(
