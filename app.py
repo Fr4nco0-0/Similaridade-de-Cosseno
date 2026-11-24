@@ -39,7 +39,7 @@ def capa(onde, r):
 
 def cartao(r, similaridade=True):
     with st.container(border=True):
-        col1, col2, col3 = st.columns([1, 4, 1.4])
+        col1, col2, col3 = st.columns([1.5, 4, 1.4])  # capa maior (era [1, 4, 1.4])
         capa(col1, r)
         col2.markdown(f"### {r['title']}")
         info = f"Nota: {r.get('score', '')}"
