@@ -284,10 +284,10 @@ with col_resultados:
         grade(res, chave="filtros")
     else:
     base = filtrar(df_completo())
-destaque = base.assign(_nota=pd.to_numeric(base["score"], errors="coerce")).sort_values("_nota", ascending=False)
-st.subheader("Mangás mais bem avaliados")
-grade(destaque, chave="destaque")
-st.markdown(
+    destaque = base.assign(_nota=pd.to_numeric(base["score"], errors="coerce")).sort_values("_nota", ascending=False)
+    st.subheader("Mangás mais bem avaliados")
+    grade(destaque, chave="destaque")
+    st.markdown(
 """
 
 Recomendador de Mangá · Similaridade do cosseno com embeddings de sinopses
