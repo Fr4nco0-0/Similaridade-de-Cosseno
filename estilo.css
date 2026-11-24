@@ -342,3 +342,10 @@ div[data-testid="stDialog"] button p {
 .stAppDeployButton {
     display: none !important;
 }
+
+/* AJUSTE DA SINOPSE EM LARGURA TOTAL */
+.sinopse-toggle {
+    margin-top: 6px;
+    padding-top: 10px;
+    border-top: 1px solid var(--border);
+}
