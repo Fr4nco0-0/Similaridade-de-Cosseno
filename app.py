@@ -39,7 +39,7 @@ def capa(onde, r):
 
 def cartao(r, similaridade=True):
     with st.container(border=True):
-        col1, col2, col3 = st.columns([1.2, 4, 1.4])
+        col1, col2, col3 = st.columns((1.2, 4, 1.4))
         capa(col1, r)
         col2.markdown(f"### {r['title']}")
         nota = r.get("score", "")
@@ -61,10 +61,11 @@ def cartao(r, similaridade=True):
             st.write("Sinopse não disponível.")
         else:
             incompleta = sinopse[-1] not in ".!?\"'"
-            if incompleta:
-                sinopse = sinopse.rsplit(" ", 1)[0] + "... <em>(fim da prévia)</em>"
+            if incompleta and " " in sinopse:
+                antes, _, _ = sinopse.rpartition(" ")
+                sinopse = antes + "... <em>(fim da prévia)</em>"
             if len(sinopse) > 400:
-                resumo = sinopse[:400].rsplit(" ", 1)[0]
+                resumo, _, _ = sinopse[:400].rpartition(" ")
                 st.markdown(
                     f"""
                     <details class="sinopse-toggle">
@@ -126,7 +127,7 @@ def grade(res, chave="vitrine", por_pagina=10, por_linha=5):
                 cartao_compacto(r)
 
     if total_paginas > 1:
-        c_esq, c_meio, c_dir = st.columns([1.2, 2, 1.2])
+        c_esq, c_meio, c_dir = st.columns((1.2, 2, 1.2))
         if c_esq.button("◀ Anterior", key=f"prev_{chave}", disabled=(pag <= 1), use_container_width=True):
             st.session_state[estado_pag] -= 1
             st.rerun()
@@ -253,7 +254,7 @@ busca = st.text_input(
     placeholder="Dica: quanto mais detalhada a descrição, mais precisa será a recomendação. Valores perto de 0,4 a 0,6 já indicam boa semelhança.",
 ).strip()
 
-col_filtros, col_resultados = st.columns([1, 3], gap="large")
+col_filtros, col_resultados = st.columns((1, 3), gap="large")
 with col_filtros:
     with st.container(border=True):
         st.markdown("### Gêneros e temas")
@@ -282,4 +283,20 @@ with col_resultados:
         st.subheader("Melhores notas nesses filtros")
         grade(res, chave="filtros")
     else:
-        base = filtrar(df_completo())
+    base = filtrar(df_completo())
+destaque = base.assign(_nota=pd.to_numeric(base["score"], errors="coerce")).sort_values("_nota", ascending=False)
+st.subheader("Mangás mais bem avaliados")
+grade(destaque, chave="destaque")
+st.markdown(
+"""
+
+Recomendador de Mangá · Similaridade do cosseno com embeddings de sinopses
+
+Dados e capas via MyAnimeList (ver site) · Autores: Amanda da Silva Gonçalves, Gustavo Franco Mendonça Vasques e Isabelly Raizer ·
+GitHub · © 2026
+
+Alguns resultados podem conter conteúdo adulto (+18), indicado para maiores de 18 anos.
+
+""",
+unsafe_allow_html=True,
+)
