@@ -225,10 +225,6 @@ with col_resultados:
         )
         st.subheader("Mangás mais bem avaliados")
         lista(destaque, similaridade=False)
-        st.subheader("Melhores notas nesses filtros")
-        lista(res, similaridade=False)
-    else:
-        st.info("Digite uma busca ou escolha gêneros e temas ao lado para começar.")
 st.markdown(
     """
     <div class="rodape">
