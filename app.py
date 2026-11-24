@@ -39,7 +39,8 @@ def capa(onde, r):
 
 def cartao(r, similaridade=True):
     with st.container(border=True):
-        col1, col2, col3 = st.columns([1.5, 4, 1.4])  # capa maior (era [1, 4, 1.4])
+        # parte de cima: capa maior + título, nota, gêneros e autor
+        col1, col2 = st.columns([1.6, 3.4])
         capa(col1, r)
         col2.markdown(f"### {r['title']}")
         info = f"Nota: {r.get('score', '')}"
@@ -47,9 +48,14 @@ def cartao(r, similaridade=True):
             info = f"Similaridade: {float(r['similaridade']):.3f} · " + info
         col2.write(info)
         col2.caption(str(r.get("genres", "")).replace("|", ", "))
+        autores = str(r.get("authors", "")).strip()
+        if autores:
+            col2.write("**Autor:** " + " · ".join(a.strip() for a in autores.split("|") if a.strip()))
+
+        # parte de baixo: sinopse em largura total, começando embaixo da capa
         sinopse = str(r.get("synopsis", "")).strip()
         if not sinopse:
-            col2.write("Sinopse não disponível.")
+            st.write("Sinopse não disponível.")
         else:
             # Limpa a última palavra quebrada caso o dataset tenha cortado o texto no meio
             incompleta = sinopse[-1] not in ".!?\"'"
@@ -58,7 +64,7 @@ def cartao(r, similaridade=True):
             # Se passar de 400 caracteres, mostra resumo clicável para expandir
             if len(sinopse) > 400:
                 resumo = sinopse[:400].rsplit(" ", 1)[0]
-                col2.markdown(
+                st.markdown(
                     f"""
                     <details class="sinopse-toggle">
                         <summary>{resumo}<span class="ver-mais">... (ler mais)</span></summary>
@@ -68,12 +74,7 @@ def cartao(r, similaridade=True):
                     unsafe_allow_html=True,
                 )
             else:
-                col2.markdown(sinopse, unsafe_allow_html=True)
-        autores = str(r.get("authors", "")).strip()
-        if autores:
-            col3.markdown("**Autor**")
-            for a in autores.split("|"):
-                col3.write(a.strip())
+                st.markdown(sinopse, unsafe_allow_html=True)
 
 
 def _txt(valor, n, sep):
@@ -215,67 +216,3 @@ def lista(res, similaridade=True):
     elif not st.session_state.maior_18:
         st.info("Resultados +18 estão ocultos. Recarregue a página para responder ao aviso de idade novamente.")
     for _, r in res.iterrows():
-        cartao(r, similaridade=similaridade)
-
-
-st.title("Recomendador de Mangá")
-st.caption("As recomendações são ordenadas por sua similaridade entre as sinopses. Use os filtros de gêneros e temas para refinar a sua busca.")
-busca = st.text_input(
-    "Digite um título, trecho de sinopse ou descrição",
-    placeholder="Dica: quanto mais detalhada a descrição, mais precisa será a recomendação. Valores perto de 0,4 a 0,6 já indicam boa semelhança.",
-).strip()
-
-col_filtros, col_resultados = st.columns([1, 3], gap="large")
-with col_filtros:
-    with st.container(border=True):
-        st.markdown("### Gêneros e temas")
-        generos = checklist("Gêneros", opcoes(df, "genres"), "g")
-        temas = checklist("Temas", opcoes(df, "themes"), "t")
-        st.button("Limpar filtros", on_click=limpar_filtros, use_container_width=True)
-        st.caption("Os resultados precisam ter todos os itens escolhidos.")
-
-with col_resultados:
-    if busca:
-        achados = aplicar_filtros(filtrar(buscar_titulo(busca, df)), generos, temas)
-        if len(achados):
-            st.subheader("Títulos encontrados")
-            for _, r in achados.iterrows():
-                cartao(r, similaridade=False)
-        rotulo, res = recomendar(busca, df, model, emb, k=1000)
-        res = aplicar_filtros(filtrar(res), generos, temas)
-        # tira das recomendações o que já apareceu na busca direta
-        if len(achados):
-            res = res[~res["title"].isin(achados["title"])]
-        res = res.head(10)
-        st.subheader(rotulo)
-        lista(res)
-    elif generos or temas:  # sem busca: melhores notas dentro dos filtros
-        res = aplicar_filtros(filtrar(df_completo()), generos, temas)
-        res = (
-            res.assign(_nota=pd.to_numeric(res["score"], errors="coerce"))
-            .sort_values("_nota", ascending=False)
-            .head(10)
-        )
-        st.subheader("Melhores notas nesses filtros")
-        grade(res)
-    else:  # sem busca e sem filtro: grade com os mais bem avaliados
-        base = filtrar(df_completo())  # respeita o aviso +18
-        destaque = (
-            base.assign(_nota=pd.to_numeric(base["score"], errors="coerce"))
-            .sort_values("_nota", ascending=False)
-            .head(10)
-        )
-        st.subheader("Mangás mais bem avaliados")
-        grade(destaque)
-
-st.markdown(
-    """
-    <div class="rodape">
-        Recomendador de Mangá · Similaridade do cosseno com embeddings de sinopses<br>
-        Dados e capas via MyAnimeList(<a href="https://myanimelist.net" target="_blank">ver site</a>) · Autores: Amanda da Silva Gonçalves, Gustavo Franco Mendonça Vasques e Isabelly Raizer ·
-        <a href="https://github.com/Fr4nco0-0/Similaridade-de-Cosseno" target="_blank">GitHub</a> · © 2026<br>
-        Alguns resultados podem conter conteúdo adulto (+18), indicado para maiores de 18 anos.
-    </div>
-    """,
-    unsafe_allow_html=True,
-)
