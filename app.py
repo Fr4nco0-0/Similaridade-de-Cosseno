@@ -197,7 +197,7 @@ with col_resultados:
         st.subheader(rotulo)
         lista(res)
     elif generos or temas:  # sem busca: mostra as melhores notas dentro dos filtros
-        res = aplicar_filtros(filtrar(df_completo()), generos, temas): df_completo()
+        res = aplicar_filtros(filtrar(df_completo()), generos, temas):
         res = (
             res.assign(_nota=pd.to_numeric(res["score"], errors="coerce"))
             .sort_values("_nota", ascending=False)
