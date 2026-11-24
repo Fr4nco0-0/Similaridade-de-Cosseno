@@ -15,7 +15,7 @@ def dados():
 
 def cartao(r, similaridade=True):
     with st.container(border=True):
-        col1, col2 = st.columns([1, 4])
+        col1, col2, col3 = st.columns([1, 4, 1.4])
         img_url = str(r.get("image_url", ""))
         if img_url.startswith("http"):
             if r.get("mais_18", False):
@@ -61,6 +61,11 @@ def cartao(r, similaridade=True):
                 )
             else:
                 col2.markdown(sinopse, unsafe_allow_html=True)
+                autores = str(r.get("authors", "")).strip()
+        if autores:
+            col3.markdown("**Autor**")
+            for a in autores.split("|"):
+                col3.write(a.strip())
 
 
 df, model, emb = dados()
