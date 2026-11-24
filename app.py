@@ -1,3 +1,4 @@
+import html
 import os
 import pandas as pd
 import streamlit as st
@@ -67,9 +68,49 @@ def cartao(r, similaridade=True):
             for a in autores.split("|"):
                 col3.write(a.strip())
 
+def capa(onde, r):
+    img_url = str(r.get("image_url", ""))
+    if not img_url.startswith("http"):
+        return
+    if r.get("mais_18", False):
+        onde.markdown(
+            f"""
+            <div class="capa-wrap">
+                <label class="capa-nsfw" title="Clique para revelar">
+                    <input type="checkbox">
+                    <img src="{img_url}" alt="{html.escape(str(r.get('title', '')), quote=True)}">
+                    <span class="badge-18">+18</span>
+                </label>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+    else:
+        onde.image(img_url)
+
+def cartao_compacto(r):
+    with st.container(border=True):
+        capa(st, r)
+        st.markdown(f"**{r['title']}**")
+        st.write(f"Nota: {r.get('score', '')}")
+        st.caption(str(r.get("genres", "")).replace("|", ", "))
+        autores = str(r.get("authors", "")).strip()
+        if autores:
+            st.caption(autores.replace("|", ", "))
+
+def grade(res, por_linha=5):
+    if len(res) == 0:
+        st.info("Nenhum mangá encontrado.")
+        return
+    if st.session_state.maior_18 and res["mais_18"].astype(bool).any():
+        st.warning("Alguns resultados têm conteúdo +18. As capas ficam borradas até você clicar nelas.")
+    for i in range(0, len(res), por_linha):
+        cols = st.columns(por_linha)
+        for col, (_, r) in zip(cols, res.iloc[i:i + por_linha].iterrows()):
+            with col:
+                cartao_compacto(r)
 
 df, model, emb = dados()
-
 
 @st.cache_resource
 def df_completo():
@@ -211,7 +252,7 @@ with col_resultados:
         st.subheader("Mangás mais bem avaliados")
         lista(destaque, similaridade=False)
         st.subheader("Melhores notas nesses filtros")
-        lista(res, similaridade=False)
+        grade(destaque)
     else:  # sem busca e sem filtro, mostra os mais bem avaliados
         base = filtrar(df_completo())   # respeita o aviso +18
         destaque = (
@@ -219,6 +260,8 @@ with col_resultados:
             .sort_values("_nota", ascending=False)
             .head(10)
         )
+        st.subheader("Melhores notas nesses filtros")
+        lista(res, similaridade=False)
 st.markdown(
     """
     <div class="rodape">
