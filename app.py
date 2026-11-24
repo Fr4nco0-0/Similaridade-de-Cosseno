@@ -171,8 +171,7 @@ def lista(res, similaridade=True):
 
 st.title("Recomendador de Mangá")
 busca = st.text_input("Digite um título, trecho de sinopse ou descrição",
-placeholder="Dica: quanto mais detalhada a descrição, mais precisa será a recomendação e mais próximo de 1 será o resultado!",).strip()
-
+placeholder="Dica: quanto mais detalhada a descrição, mais precisa será a recomendação. Valores perto de 0,4 a 0,6 já indicam boa semelhança.",
 col_filtros, col_resultados = st.columns([1, 3], gap="large")
 with col_filtros:
     with st.container(border=True):
