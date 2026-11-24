@@ -287,7 +287,7 @@ with col_resultados:
         destaque = base.assign(_nota=pd.to_numeric(base["score"], errors="coerce")).sort_values("_nota", ascending=False)
         st.subheader("Mangás mais bem avaliados")
         grade(destaque, chave="destaque")
-        st.markdown(
+st.markdown(
 """
 
 Recomendador de Mangá · Similaridade do cosseno com embeddings de sinopses
