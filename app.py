@@ -1,5 +1,5 @@
 import os
-
+import pandas as pd
 import streamlit as st
 
 from similaridade import buscar_titulo, carregar, recomendar
@@ -9,11 +9,9 @@ st.set_page_config(page_title="Recomendador de Mangá", layout="wide")
 if os.path.exists("estilo.css"):
     st.markdown(f"<style>{open('estilo.css', encoding='utf-8').read()}</style>", unsafe_allow_html=True)
 
-
 @st.cache_resource
 def dados():
     return carregar()
-
 
 def cartao(r, similaridade=True):
     with st.container(border=True):
@@ -67,31 +65,121 @@ def cartao(r, similaridade=True):
             else:
                 col2.markdown(sinopse, unsafe_allow_html=True)
 
-
 df, model, emb = dados()
 
+#AVISO +18 
+if "maior_18" not in st.session_state:
+    st.session_state.maior_18 = None  # None = ainda não respondeu
+
+@st.dialog("Você tem 18 anos ou mais?")
+def aviso_idade():
+    st.write("Este site pode exibir capas e sinopses de mangás com conteúdo adulto (+18).")
+    st.markdown(
+        """
+        <div class="termo-box">
+            <strong>Termo de responsabilidade</strong><br>
+            Ao aceitar, você declara ter 18 anos ou mais e assume a responsabilidade por
+            visualizar esse conteúdo. As obras vêm de um dataset público do MyAnimeList e este
+            é um trabalho acadêmico: os autores não produzem nem recomendam o conteúdo.
+            Se você não aceitar, os resultados +18 serão ocultados.
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+    c1, c2 = st.columns(2)
+    if c1.button("Sim, tenho 18+ e aceito", type="primary", use_container_width=True):
+        st.session_state.maior_18 = True
+        st.rerun()
+    if c2.button("Não aceito", use_container_width=True):
+        st.session_state.maior_18 = False
+        st.rerun()
+
+def filtrar(d):
+    # só mostra +18 para quem confirmou; sem resposta ou "não" = oculta
+    if st.session_state.maior_18:
+        return d
+    return d[~d["mais_18"].astype(bool)]
+
+if st.session_state.maior_18 is None:
+    aviso_idade()
+
+#FILTROS DE GÊNERO E TEMA
+@st.cache_data
+def opcoes(_df, coluna):
+    if coluna not in _df.columns:
+        return []
+    itens = set()
+    for v in _df[coluna].dropna().astype(str):
+        for t in v.split("|"):
+            t = t.strip()
+            if t:
+                itens.add(t)
+    return sorted(itens)
+def contem_todos(d, coluna, escolhidos):
+    if not escolhidos or coluna not in d.columns:
+        return d
+    def ok(v):
+        itens = {t.strip() for t in str(v).split("|")}
+        return all(e in itens for e in escolhidos)
+    return d[d[coluna].apply(ok)]
+def aplicar_filtros(d, generos, temas):
+    return contem_todos(contem_todos(d, "genres", generos), "themes", temas)
+def lista(res, similaridade=True):
+    if len(res) == 0:
+        st.info("Nenhum mangá encontrado com esses filtros.")
+        return
+    if st.session_state.maior_18 and res["mais_18"].astype(bool).any():
+        st.warning("Alguns resultados têm conteúdo +18. As capas ficam borradas até você clicar nelas.")
+    elif not st.session_state.maior_18:
+        st.info("Resultados +18 estão ocultos. Recarregue a página para responder ao aviso de idade novamente.")
+    for _, r in res.iterrows():
+        cartao(r, similaridade=similaridade)
+
 st.title("Recomendador de Mangá")
-busca = st.text_input("Digite um título, trecho de sinopse ou descrição (português ou inglês)", 
+busca = st.text_input("Digite um título, trecho de sinopse ou descrição (português ou inglês)",
 placeholder="Dica: quanto mais detalhada a descrição, mais precisa será a recomendação e mais próximo de 1 será o resultado!",).strip()
 
-if busca:
-    achados = buscar_titulo(busca, df)
-    if len(achados):
-        st.subheader("Títulos encontrados")
-        for _, r in achados.iterrows():
-            cartao(r, similaridade=False)
+col_filtros, col_resultados = st.columns([1, 3], gap="large")
+with col_filtros:
+    with st.container(border=True):
+        st.markdown("### Gêneros e temas")
+        generos = st.multiselect("Gêneros", opcoes(df, "genres"), placeholder="Escolha um ou mais")
+        temas = st.multiselect("Temas", opcoes(df, "themes"), placeholder="Escolha um ou mais")
+        st.caption("Os resultados precisam ter todos os itens escolhidos.")
+with col_resultados:  # NOVO
+    if busca:
+        achados = aplicar_filtros(filtrar(buscar_titulo(busca, df)), generos, temas)
+        if len(achados):
+            st.subheader("Títulos encontrados")
+            for _, r in achados.iterrows():
+                cartao(r, similaridade=False)
+        rotulo, res = recomendar(busca, df, model, emb)
+        res = aplicar_filtros(filtrar(res), generos, temas)
 
-    rotulo, res = recomendar(busca, df, model, emb)
-    st.subheader(rotulo)
-    for _, r in res.iterrows():
-        cartao(r)
-
+        # tira das recomendações o que já apareceu na busca direta
+        if len(achados):
+            res = res[~res["title"].isin(achados["title"])]
+        res = res.head(10)
+        st.subheader(rotulo)
+        lista(res)
+    elif generos or temas:  # sem busca: mostra as melhores notas dentro dos filtros
+        res = aplicar_filtros(filtrar(df), generos, temas)
+        res = (
+            res.assign(_nota=pd.to_numeric(res["score"], errors="coerce"))
+            .sort_values("_nota", ascending=False)
+            .head(10)
+        )
+        st.subheader("Melhores notas nesses filtros")
+        lista(res, similaridade=False)
+    else:
+        st.info("Digite uma busca ou escolha gêneros e temas ao lado para começar.")
 st.markdown(
     """
     <div class="rodape">
         Recomendador de Mangá · Similaridade do cosseno com embeddings de sinopses<br>
         Dados e capas via MyAnimeList(<a href="https://myanimelist.net" target="_blank">ver site</a>) · Autores: Amanda da Silva Gonçalves, Gustavo Franco Mendonça Vasques e Isabelly Raizer ·
-        <a href="https://github.com/Fr4nco0-0/Similaridade-de-Cosseno" target="_blank">GitHub</a> · © 2026
+        <a href="https://github.com/Fr4nco0-0/Similaridade-de-Cosseno" target="_blank">GitHub</a> · © 2026<br>
+        Alguns resultados podem conter conteúdo adulto (+18), indicado para maiores de 18 anos.
     </div>
     """,
     unsafe_allow_html=True,
