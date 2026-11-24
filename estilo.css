@@ -123,18 +123,17 @@ hr {
 /* BOTÕES */
 
 .stButton button {
-    background-color: var(--white);
-    color: #111111;
-    border: none;
+    background-color: #b41414 !important;
+    border: none !important;
     border-radius: 7px;
-    font-weight: 650;
     transition: 0.2s;
 }
-
+.stButton button p {
+    color: #ffffff !important;
+    font-weight: 650;
+}
 .stButton button:hover {
-    background-color: #cccccc;
-    color: #000000;
-    border: none;
+    background-color: #d11a1a !important;
 }
 
 /* SCROLLBAR */
