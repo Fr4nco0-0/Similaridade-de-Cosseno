@@ -1,16 +1,20 @@
 import html
 import os
+
 import pandas as pd
 import streamlit as st
+
 from similaridade import _formatar, buscar_titulo, carregar, recomendar
 
 st.set_page_config(page_title="Recomendador de Mangá", layout="wide")
 if os.path.exists("estilo.css"):
     st.markdown(f"<style>{open('estilo.css', encoding='utf-8').read()}</style>", unsafe_allow_html=True)
 
+
 @st.cache_resource
 def dados():
     return carregar()
+
 
 def capa(onde, r):
     img_url = str(r.get("image_url", ""))
@@ -31,6 +35,7 @@ def capa(onde, r):
         )
     else:
         onde.image(img_url)
+
 
 def cartao(r, similaridade=True):
     with st.container(border=True):
@@ -72,12 +77,14 @@ def cartao(r, similaridade=True):
             else:
                 st.markdown(sinopse, unsafe_allow_html=True)
 
+
 def _txt(valor, n, sep):
     itens = [t.strip() for t in str(valor).split("|") if t.strip()]
     return html.escape(sep.join(itens[:n]))
 
+
 def cartao_compacto(r):
-    with st.container(border=True, height=360):
+    with st.container(border=True, height=335):
         capa(st, r)
         nota = r.get("score", "")
         nota = "—" if str(nota) in ("", "nan", "None") else nota
@@ -91,29 +98,59 @@ def cartao_compacto(r):
             unsafe_allow_html=True,
         )
 
-def grade(res, por_linha=5):
-    if len(res) == 0:
+
+def grade(res, chave="vitrine", por_pagina=10, por_linha=5):
+    total = len(res)
+    if total == 0:
         st.info("Nenhum mangá encontrado.")
         return
+
     if st.session_state.maior_18 and res["mais_18"].astype(bool).any():
         st.warning("Alguns resultados têm conteúdo +18. As capas ficam borradas até você clicar nelas.")
     elif not st.session_state.maior_18:
         st.info("Resultados +18 estão ocultos. Recarregue a página para responder ao aviso de idade novamente.")
-    for i in range(0, len(res), por_linha):
+
+    total_paginas = max(1, (total - 1) // por_pagina + 1)
+    estado_pag = f"pag_{chave}"
+    if estado_pag not in st.session_state or st.session_state[estado_pag] > total_paginas:
+        st.session_state[estado_pag] = 1
+
+    pag = st.session_state[estado_pag]
+    inicio = (pag - 1) * por_pagina
+    fatia = res.iloc[inicio:inicio + por_pagina]
+
+    for i in range(0, len(fatia), por_linha):
         cols = st.columns(por_linha)
-        for col, (_, r) in zip(cols, res.iloc[i:i + por_linha].iterrows()):
+        for col, (_, r) in zip(cols, fatia.iloc[i:i + por_linha].iterrows()):
             with col:
                 cartao_compacto(r)
 
+    if total_paginas > 1:
+        c_esq, c_meio, c_dir = st.columns([1.2, 2, 1.2])
+        if c_esq.button("◀ Anterior", key=f"prev_{chave}", disabled=(pag <= 1), use_container_width=True):
+            st.session_state[estado_pag] -= 1
+            st.rerun()
+        c_meio.markdown(
+            f"<div style='text-align:center; padding-top:6px; color:var(--muted);'>Página <strong>{pag}</strong> de {total_paginas}</div>",
+            unsafe_allow_html=True,
+        )
+        if c_dir.button("Próxima ▶", key=f"next_{chave}", disabled=(pag >= total_paginas), use_container_width=True):
+            st.session_state[estado_pag] += 1
+            st.rerun()
+
+
 df, model, emb = dados()
+
 
 @st.cache_resource
 def df_completo():
     return df if "mais_18" in df.columns else _formatar(df.copy())
 
+
 # AVISO +18
 if "maior_18" not in st.session_state:
     st.session_state.maior_18 = None
+
 
 @st.dialog("Você tem 18 anos ou mais?")
 def aviso_idade():
@@ -138,13 +175,16 @@ def aviso_idade():
         st.session_state.maior_18 = False
         st.rerun()
 
+
 def filtrar(d):
     if st.session_state.maior_18:
         return d
     return d[~d["mais_18"].astype(bool)]
 
+
 if st.session_state.maior_18 is None:
     aviso_idade()
+
 
 # FILTROS DE GÊNERO E TEMA
 @st.cache_data
@@ -159,6 +199,7 @@ def opcoes(_df, coluna):
                 itens.add(t)
     return sorted(itens)
 
+
 def contem_todos(d, coluna, escolhidos):
     if not escolhidos or coluna not in d.columns:
         return d
@@ -169,13 +210,19 @@ def contem_todos(d, coluna, escolhidos):
 
     return d[d[coluna].apply(ok)]
 
+
 def aplicar_filtros(d, generos, temas):
     return contem_todos(contem_todos(d, "genres", generos), "themes", temas)
 
+
 def limpar_filtros():
     for k in list(st.session_state):
-        if k.startswith(("g_", "t_")):
-            st.session_state[k] = False
+        if k.startswith(("g_", "t_", "pag_")):
+            if k.startswith("pag_"):
+                st.session_state[k] = 1
+            else:
+                st.session_state[k] = False
+
 
 def checklist(titulo, itens, prefixo):
     st.markdown(f"**{titulo}**")
@@ -185,6 +232,7 @@ def checklist(titulo, itens, prefixo):
             if st.checkbox(item, key=f"{prefixo}_{item}"):
                 escolhidos.append(item)
     return escolhidos
+
 
 def lista(res, similaridade=True):
     if len(res) == 0:
@@ -196,6 +244,7 @@ def lista(res, similaridade=True):
         st.info("Resultados +18 estão ocultos. Recarregue a página para responder ao aviso de idade novamente.")
     for _, r in res.iterrows():
         cartao(r, similaridade=similaridade)
+
 
 st.title("Recomendador de Mangá")
 st.caption("As recomendações são ordenadas por sua similaridade entre as sinopses. Use os filtros de gêneros e temas para refinar a sua busca.")
@@ -229,31 +278,8 @@ with col_resultados:
         lista(res)
     elif generos or temas:
         res = aplicar_filtros(filtrar(df_completo()), generos, temas)
-        res = (
-            res.assign(_nota=pd.to_numeric(res["score"], errors="coerce"))
-            .sort_values("_nota", ascending=False)
-            .head(10)
-        )
+        res = res.assign(_nota=pd.to_numeric(res["score"], errors="coerce")).sort_values("_nota", ascending=False)
         st.subheader("Melhores notas nesses filtros")
-        grade(res)
+        grade(res, chave="filtros")
     else:
         base = filtrar(df_completo())
-        destaque = (
-            base.assign(_nota=pd.to_numeric(base["score"], errors="coerce"))
-            .sort_values("_nota", ascending=False)
-            .head(10)
-        )
-        st.subheader("Mangás mais bem avaliados")
-        grade(destaque)
-
-st.markdown(
-    """
-    <div class="rodape">
-        Recomendador de Mangá · Similaridade do cosseno com embeddings de sinopses<br>
-        Dados e capas via MyAnimeList (<a href="https://myanimelist.net" target="_blank">ver site</a>) · Autores: Amanda da Silva Gonçalves, Gustavo Franco Mendonça Vasques e Isabelly Raizer ·
-        <a href="https://github.com" target="_blank">GitHub</a> · © 2026<br>
-        Alguns resultados podem conter conteúdo adulto (+18), indicado para maiores de 18 anos.
-    </div>
-    """,
-    unsafe_allow_html=True,
-)
