@@ -349,7 +349,17 @@ with col_filtros:
                   args=("recs_fav",), disabled=n_fav == 0, use_container_width=True)
         st.button("Limpar favoritos", key="limpar_fav", on_click=limpar_favoritos,
                   disabled=n_fav == 0, use_container_width=True)
-
+        with st.container(border=True):
+        st.markdown("### Preferência de idade")
+        status_idade = "18+ liberado" if st.session_state.maior_18 else "18+ oculto"
+        st.caption(f"Status atual: **{status_idade}**")
+        st.button(
+            "Alterar preferência (+18)",
+            key="alterar_idade",
+            on_click=resetar_idade,
+            use_container_width=True,
+        )
+        
 def tela_especial(generos, temas):
     visao = st.session_state.visao
     base = df_completo()
