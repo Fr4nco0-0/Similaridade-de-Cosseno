@@ -20,19 +20,18 @@ if "favs_sincronizados" not in st.session_state:
 if "maior_18" not in st.session_state:
     st.session_state.maior_18 = None
 
-# Recupera os favoritos salvos assim que o componente carregar no navegador
-if not st.session_state.favs_sincronizados:
-    favs_salvos = localS.getItem("favoritos_manga")
-    if favs_salvos is not None:
-        try:
-            lista_ids = json.loads(favs_salvos) if isinstance(favs_salvos, str) else favs_salvos
-            st.session_state.favoritos = [int(x) for x in lista_ids]
-        except Exception:
-            st.session_state.favoritos = []
-        st.session_state.favs_sincronizados = True
+# 1. Lê favoritos salvos no navegador
+favs_salvos = localS.getItem("favoritos_manga", key="get_favs")
+if not st.session_state.favs_sincronizados and favs_salvos is not None:
+    try:
+        lista_ids = json.loads(favs_salvos) if isinstance(favs_salvos, str) else favs_salvos
+        st.session_state.favoritos = [int(x) for x in lista_ids]
+    except Exception:
+        st.session_state.favoritos = []
+    st.session_state.favs_sincronizados = True
 
-# Recupera a escolha de idade (+18) salva no navegador
-idade_salva = localS.getItem("maior_18_manga")
+# 2. Lê escolha de idade (+18) salva no navegador
+idade_salva = localS.getItem("maior_18_manga", key="get_idade")
 if idade_salva is not None:
     st.session_state.maior_18 = (str(idade_salva).lower() == "true")
 
@@ -56,12 +55,12 @@ def alternar_fav(idx):
         favs.append(idx)
     st.session_state["pag_recs_fav"] = 1
     st.session_state.favs_sincronizados = True
-    localS.setItem("favoritos_manga", json.dumps(favs))
+    localS.setItem("favoritos_manga", json.dumps(favs), key=f"set_fav_{idx}_{len(favs)}")
 
 def limpar_favoritos():
     st.session_state.favoritos = []
     st.session_state.favs_sincronizados = True
-    localS.deleteItem("favoritos_manga")
+    localS.deleteItem("favoritos_manga", key="del_favs")
     if st.session_state.visao in ("recs_fav", "lista_fav"):
         ir_para("vitrine")
 
@@ -248,19 +247,20 @@ def aviso_idade():
     c1, c2 = st.columns(2)
     if c1.button("Sim, tenho 18+ e aceito", type="primary", use_container_width=True):
         st.session_state.maior_18 = True
-        localS.setItem("maior_18_manga", "true")
-        st.rerun()
+        localS.setItem("maior_18_manga", "true", key="set_idade_sim")
     if c2.button("Não aceito", use_container_width=True):
         st.session_state.maior_18 = False
-        localS.setItem("maior_18_manga", "false")
-        st.rerun()
+        localS.setItem("maior_18_manga", "false", key="set_idade_nao")
 
 def filtrar(d):
     if st.session_state.maior_18:
         return d
     return d[~d["mais_18"].astype(bool)]
 
-if st.session_state.maior_18 is None and idade_salva is None:
+# Espera o primeiro ciclo de leitura do navegador terminar antes de decidir abrir o modal
+if "checou_storage" not in st.session_state:
+    st.session_state.checou_storage = True
+elif st.session_state.maior_18 is None and idade_salva is None:
     aviso_idade()
 
 # FILTROS DE GÊNERO E TEMA
