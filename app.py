@@ -254,7 +254,7 @@ def aviso_idade():
         """,
         unsafe_allow_html=True,
     )
-        c1, c2 = st.columns(2)
+    c1, c2 = st.columns(2)
     if c1.button("Sim, tenho 18+ e aceito", type="primary", use_container_width=True):
         st.session_state.maior_18 = True
         salvar_no_navegador()
