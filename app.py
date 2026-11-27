@@ -1,6 +1,7 @@
 import html
 import json
 import os
+import time
 import pandas as pd
 import streamlit as st
 from streamlit_local_storage import LocalStorage
@@ -253,13 +254,17 @@ def aviso_idade():
         """,
         unsafe_allow_html=True,
     )
-    c1, c2 = st.columns(2)
+        c1, c2 = st.columns(2)
     if c1.button("Sim, tenho 18+ e aceito", type="primary", use_container_width=True):
         st.session_state.maior_18 = True
         salvar_no_navegador()
+        time.sleep(0.2)
+        st.rerun()
     if c2.button("Não aceito", use_container_width=True):
         st.session_state.maior_18 = False
         salvar_no_navegador()
+        time.sleep(0.2)
+        st.rerun()
 
 def filtrar(d):
     if st.session_state.maior_18:
