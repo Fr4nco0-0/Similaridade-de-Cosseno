@@ -61,7 +61,7 @@ No código, essa operação é executada de forma vetorizada com NumPy por meio 
 
 ## 5. Estrutura dos arquivos
 
-- `app.py`: interface web, vitrine paginada, filtros, modal de verificação +18 e rodapé.
+- `app.py`: interface web, vitrine paginada, filtros, favoritos, modal de verificação +18 e rodapé.
 - `similaridade.py`: carregamento dos dados, geração/leitura de embeddings, cálculo da similaridade e detecção de conteúdo +18.
 - `limpar.py`: script de limpeza, remoção de duplicatas e pré-processamento do dataset original.
 - `manga_limpo.parquet`: base de dados tratada utilizada pelo recomendador.
