@@ -19,6 +19,8 @@ Este projeto implementa um sistema de recomendação de mangás utilizando Proce
 - **Vitrine paginada:** Exibição dos mangás mais bem avaliados quando nenhuma busca está ativa.
 - **Moderação de conteúdo (+18):** Verificação de idade na entrada e detecção automática de conteúdo sensível em gêneros, temas e sinopses, aplicando desfoque (`blur`) clicável nas capas.
 - **Sinopses expansíveis:** Corte limpo na última palavra completa com opção de expandir para ler a prévia integral.
+- **Favoritos:** Permite adicionar títulos na lista pessoal, visualizar os itens salvos, limpar a seleção ou gerar recomendações personalizadas com base nas obras favoritas.
+- **Parecidos:** Exibe sugestões de obras semelhantes diretamente a partir do card de cada título.
 
 ---
 
