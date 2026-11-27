@@ -17,6 +17,8 @@ if "favoritos" not in st.session_state:
     st.session_state.favoritos = []
 if "favs_sincronizados" not in st.session_state:
     st.session_state.favs_sincronizados = False
+if "maior_18" not in st.session_state:
+    st.session_state.maior_18 = None
 
 # Recupera os favoritos salvos assim que o componente carregar no navegador
 if not st.session_state.favs_sincronizados:
@@ -29,19 +31,22 @@ if not st.session_state.favs_sincronizados:
             st.session_state.favoritos = []
         st.session_state.favs_sincronizados = True
 
+# Recupera a escolha de idade (+18) salva no navegador
+idade_salva = localS.getItem("maior_18_manga")
+if idade_salva is not None:
+    st.session_state.maior_18 = (str(idade_salva).lower() == "true")
+
 # ESTADO: "visão" mostrada na coluna da direita
 st.session_state.setdefault("visao", "vitrine")  # vitrine | parecidos | recs_fav | lista_fav
 st.session_state.setdefault("ref_idx", None)
 
 VISOES_ESPECIAIS = ("parecidos", "recs_fav", "lista_fav")
 
-
 def ir_para(visao, ref=None):
     st.session_state.visao = visao
     st.session_state.ref_idx = ref
     for v in VISOES_ESPECIAIS:
         st.session_state[f"pag_{v}"] = 1
-
 
 def alternar_fav(idx):
     favs = st.session_state.favoritos
@@ -53,14 +58,12 @@ def alternar_fav(idx):
     st.session_state.favs_sincronizados = True
     localS.setItem("favoritos_manga", json.dumps(favs))
 
-
 def limpar_favoritos():
     st.session_state.favoritos = []
     st.session_state.favs_sincronizados = True
     localS.deleteItem("favoritos_manga")
     if st.session_state.visao in ("recs_fav", "lista_fav"):
         ir_para("vitrine")
-
 
 def botoes_acao(onde, r, chave):
     """Botões ♡ Favoritar e 🔍 Parecidos. `chave` evita chaves duplicadas entre seções."""
@@ -86,11 +89,9 @@ def botoes_acao(onde, r, chave):
         help="Ver mangás com sinopse parecida com esta",
     )
 
-
 @st.cache_resource
 def dados():
     return carregar()
-
 
 def capa(onde, r):
     img_url = str(r.get("image_url", ""))
@@ -111,7 +112,6 @@ def capa(onde, r):
         )
     else:
         onde.image(img_url)
-
 
 def cartao(r, similaridade=True, chave="c"):
     with st.container(border=True):
@@ -155,11 +155,9 @@ def cartao(r, similaridade=True, chave="c"):
             else:
                 st.markdown(sinopse, unsafe_allow_html=True)
 
-
 def _txt(valor, n, sep):
     itens = [t.strip() for t in str(valor).split("|") if t.strip()]
     return html.escape(sep.join(itens[:n]))
-
 
 def cartao_compacto(r, chave="g"):
     with st.container(border=True, height=430):
@@ -177,7 +175,6 @@ def cartao_compacto(r, chave="g"):
         )
         botoes_acao(st, r, chave)
 
-
 def grade(res, chave="vitrine", por_pagina=10, por_linha=5):
     total = len(res)
     if total == 0:
@@ -187,7 +184,7 @@ def grade(res, chave="vitrine", por_pagina=10, por_linha=5):
     if st.session_state.maior_18 and res["mais_18"].astype(bool).any():
         st.warning("Alguns resultados têm conteúdo +18. As capas ficam borradas até você clicar nelas.")
     elif not st.session_state.maior_18:
-        st.info("Resultados +18 estão ocultos. Recarregue a página para responder ao aviso de idade novamente.")
+        st.info("Resultados +18 estão ocultos conforme sua escolha.")
 
     total_paginas = max(1, (total - 1) // por_pagina + 1)
     estado_pag = f"pag_{chave}"
@@ -217,32 +214,22 @@ def grade(res, chave="vitrine", por_pagina=10, por_linha=5):
             st.session_state[estado_pag] += 1
             st.rerun()
 
-
 df, model, emb = dados()
-
 
 @st.cache_resource
 def df_completo():
     d = df if "mais_18" in df.columns else _formatar(df.copy())
     # df tem índice 0..n-1 (reset_index), igual à linha de `emb`
     return d if "_idx" in d.columns else d.assign(_idx=d.index)
-
-
 @st.cache_resource
 def tags_matriz():
     return matriz_tags(df_completo())
-
 
 # Pesos da recomendação por favoritos (ver recomendar_por_indices)
 PESO_MAX = 0.7   # 0 = só a média dos favoritos; 1 = só o favorito mais parecido
 PESO_TAGS = 0.2  # peso de gêneros/temas em comum com os favoritos
 
-
 # AVISO +18
-if "maior_18" not in st.session_state:
-    st.session_state.maior_18 = None
-
-
 @st.dialog("Você tem 18 anos ou mais?")
 def aviso_idade():
     st.write("Este site pode exibir capas e sinopses de mangás com conteúdo adulto (+18).")
@@ -261,21 +248,20 @@ def aviso_idade():
     c1, c2 = st.columns(2)
     if c1.button("Sim, tenho 18+ e aceito", type="primary", use_container_width=True):
         st.session_state.maior_18 = True
+        localS.setItem("maior_18_manga", "true")
         st.rerun()
     if c2.button("Não aceito", use_container_width=True):
         st.session_state.maior_18 = False
+        localS.setItem("maior_18_manga", "false")
         st.rerun()
-
 
 def filtrar(d):
     if st.session_state.maior_18:
         return d
     return d[~d["mais_18"].astype(bool)]
 
-
-if st.session_state.maior_18 is None:
+if st.session_state.maior_18 is None and idade_salva is None:
     aviso_idade()
-
 
 # FILTROS DE GÊNERO E TEMA
 @st.cache_data
@@ -300,10 +286,8 @@ def contem_todos(d, coluna, escolhidos):
 
     return d[d[coluna].apply(ok)]
 
-
 def aplicar_filtros(d, generos, temas):
     return contem_todos(contem_todos(d, "genres", generos), "themes", temas)
-
 
 def limpar_filtros():
     for k in list(st.session_state):
@@ -312,7 +296,6 @@ def limpar_filtros():
                 st.session_state[k] = 1
             else:
                 st.session_state[k] = False
-
 
 def checklist(titulo, itens, prefixo):
     st.markdown(f"**{titulo}**")
@@ -323,7 +306,6 @@ def checklist(titulo, itens, prefixo):
                 escolhidos.append(item)
     return escolhidos
 
-
 def lista(res, similaridade=True, chave="l"):
     if len(res) == 0:
         st.info("Nenhum mangá encontrado com esses filtros.")
@@ -331,10 +313,9 @@ def lista(res, similaridade=True, chave="l"):
     if st.session_state.maior_18 and res["mais_18"].astype(bool).any():
         st.warning("Alguns resultados têm conteúdo +18. As capas ficam borradas até você clicar nelas.")
     elif not st.session_state.maior_18:
-        st.info("Resultados +18 estão ocultos. Recarregue a página para responder ao aviso de idade novamente.")
+        st.info("Resultados +18 estão ocultos conforme sua escolha.")
     for _, r in res.iterrows():
         cartao(r, similaridade=similaridade, chave=chave)
-
 
 st.title("Recomendador de Mangá")
 st.caption("As recomendações são ordenadas por sua similaridade entre as sinopses. Use os filtros de gêneros e temas para refinar a sua busca.")
@@ -363,7 +344,6 @@ with col_filtros:
                   args=("recs_fav",), disabled=n_fav == 0, use_container_width=True)
         st.button("Limpar favoritos", key="limpar_fav", on_click=limpar_favoritos,
                   disabled=n_fav == 0, use_container_width=True)
-
 
 def tela_especial(generos, temas):
     visao = st.session_state.visao
@@ -424,7 +404,7 @@ with col_resultados:
         destaque = base.assign(_nota=pd.to_numeric(base["score"], errors="coerce")).sort_values("_nota", ascending=False)
         st.subheader("Mangás mais bem avaliados")
         grade(destaque, chave="destaque")
-        
+
 st.markdown(
     """
     <div style="margin-top: 50px; padding: 22px 20px; background-color: #171717; border: 1px solid #303030; border-radius: 12px; text-align: center; color: #999999; font-size: 13px; line-height: 1.7;">
