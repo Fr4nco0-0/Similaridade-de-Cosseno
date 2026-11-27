@@ -69,6 +69,10 @@ def limpar_favoritos():
     if st.session_state.visao in ("recs_fav", "lista_fav"):
         ir_para("vitrine")
 
+def resetar_idade():
+    st.session_state.maior_18 = None
+    salvar_no_navegador()
+
 def botoes_acao(onde, r, chave):
     """Botões ♡ Favoritar e 🔍 Parecidos. `chave` evita chaves duplicadas entre seções."""
     if r.get("_idx") is None or r.get("_idx") == "":
