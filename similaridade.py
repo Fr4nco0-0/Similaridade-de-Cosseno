@@ -73,13 +73,14 @@ def buscar_titulo(busca, df, k=5):
     mask = t.str.contains(b, regex=False) | te.str.contains(b, regex=False)
     res = df[mask].copy()
     if res.empty:
-        return _formatar(res[[c for c in COLUNAS if c in df.columns]].copy())
+        return _formatar(res[[c for c in COLUNAS if c in df.columns]].copy().assign(_idx=lambda d: d.index))
     exato = ((t == b) | (te == b))[mask].values
     comeca = (t.str.startswith(b) | te.str.startswith(b))[mask].values
     res["_ordem"] = np.where(exato, 0, np.where(comeca, 1, 2))
     res["_nota"] = pd.to_numeric(res["score"], errors="coerce").fillna(0) if "score" in res.columns else 0
     res = res.sort_values(["_ordem", "_nota"], ascending=[True, False]).head(k)
-    return _formatar(res[[c for c in COLUNAS if c in res.columns]].copy()).fillna("")
+    sel = res[[c for c in COLUNAS if c in res.columns]].copy().assign(_idx=lambda d: d.index)
+    return _formatar(sel).fillna("")
 
 def recomendar(busca, df, model, emb, k=10):
     """Recomendações baseadas em similaridade."""
@@ -92,6 +93,33 @@ def recomendar(busca, df, model, emb, k=10):
         q, pular, rotulo = model.encode(busca, normalize_embeddings=True).astype(np.float32), None, "Mais parecidos com o que você digitou:"
     sims = emb @ q
     top = [int(j) for j in sims.argsort()[::-1] if j != pular][:k]
-    res = _formatar(df.loc[top, [c for c in COLUNAS if c in df.columns]].copy())
+    sel = df.loc[top, [c for c in COLUNAS if c in df.columns]].copy().assign(_idx=lambda d: d.index)
+    res = _formatar(sel)
     res["similaridade"] = sims[top].round(3)
     return rotulo, res.fillna("")
+
+def recomendar_por_indices(indices, df, emb, k=1000):
+    """Recomenda a partir de um ou mais mangás (índices de linha de df/emb).
+
+    O "gosto" é a média dos vetores dos mangás escolhidos, normalizada para
+    norma 1. Como todos os vetores têm norma 1, o cosseno com esse vetor é só
+    o produto escalar: sims = emb @ q.
+    Um único índice = "Ver parecidos"; vários = recomendação por favoritos.
+    `df` deve ter as linhas na mesma ordem de `emb` (índice = posição).
+    """
+    idx = sorted({int(i) for i in indices})
+    if not idx:
+        return df.iloc[0:0].assign(similaridade=pd.Series(dtype=float))
+    q = emb[idx].mean(axis=0)
+    norma = np.linalg.norm(q)
+    if norma == 0:
+        return df.iloc[0:0].assign(similaridade=pd.Series(dtype=float))
+    sims = emb @ (q / norma)
+    sims[idx] = -np.inf  # não recomenda os próprios mangás de origem
+    n = min(k, len(emb) - len(idx))
+    top = np.argsort(-sims)[:n]
+    res = df.iloc[top].copy()
+    if "_idx" not in res.columns:
+        res["_idx"] = res.index
+    res["similaridade"] = sims[top].round(3)
+    return res
