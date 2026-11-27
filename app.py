@@ -4,7 +4,7 @@ import os
 import pandas as pd
 import streamlit as st
 
-from similaridade import _formatar, buscar_titulo, carregar, recomendar, recomendar_por_indices
+from similaridade import _formatar, buscar_titulo, carregar, recomendar, recomendar_por_indices, matriz_tags
 
 st.set_page_config(page_title="Recomendador de Mangá", layout="wide")
 if os.path.exists("estilo.css"):
@@ -207,6 +207,16 @@ def df_completo():
     return d if "_idx" in d.columns else d.assign(_idx=d.index)
 
 
+@st.cache_resource
+def tags_matriz():
+    return matriz_tags(df_completo())
+
+
+# Pesos da recomendação por favoritos (ver recomendar_por_indices)
+PESO_MAX = 0.7   # 0 = só a média dos favoritos; 1 = só o favorito mais parecido
+PESO_TAGS = 0.2  # peso de gêneros/temas em comum com os favoritos
+
+
 # AVISO +18
 if "maior_18" not in st.session_state:
     st.session_state.maior_18 = None
@@ -351,10 +361,11 @@ def tela_especial(generos, temas):
             return
         st.subheader(f"Recomendados a partir dos seus {len(favs)} favoritos")
         st.caption(
-            "Seu gosto é a média normalizada dos vetores dos favoritos; "
-            "a similaridade é o cosseno desse vetor com cada mangá."
+            "Nota de cada mangá: 80% sinopse (30% cosseno com a média dos favoritos, "
+            "70% pelo favorito mais parecido) + 20% gêneros e temas em comum com seus favoritos."
         )
-        res = recomendar_por_indices(favs, base, emb)
+        res = recomendar_por_indices(favs, base, emb, peso_max=PESO_MAX,
+                                     peso_tags=PESO_TAGS, tags=tags_matriz())
     else:  # lista_fav
         favs = st.session_state.favoritos
         if not favs:
