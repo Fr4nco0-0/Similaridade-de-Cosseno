@@ -3,3 +3,4 @@ pandas
 numpy
 pyarrow
 sentence-transformers
+streamlit-local-storage
