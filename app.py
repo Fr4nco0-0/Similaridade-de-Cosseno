@@ -1,18 +1,35 @@
 import html
+import json
 import os
-
 import pandas as pd
 import streamlit as st
-
+from streamlit_local_storage import LocalStorage
 from similaridade import _formatar, buscar_titulo, carregar, recomendar, recomendar_por_indices, matriz_tags
 
 st.set_page_config(page_title="Recomendador de Mangá", layout="wide")
 if os.path.exists("estilo.css"):
     st.markdown(f"<style>{open('estilo.css', encoding='utf-8').read()}</style>", unsafe_allow_html=True)
 
+# CONEXÃO COM O LOCALSTORAGE DO NAVEGADOR
+localS = LocalStorage()
 
-# ESTADO: favoritos (índices de linha) e "visão" mostrada na coluna da direita
-st.session_state.setdefault("favoritos", [])
+if "favoritos" not in st.session_state:
+    st.session_state.favoritos = []
+if "favs_sincronizados" not in st.session_state:
+    st.session_state.favs_sincronizados = False
+
+# Recupera os favoritos salvos assim que o componente carregar no navegador
+if not st.session_state.favs_sincronizados:
+    favs_salvos = localS.getItem("favoritos_manga")
+    if favs_salvos is not None:
+        try:
+            lista_ids = json.loads(favs_salvos) if isinstance(favs_salvos, str) else favs_salvos
+            st.session_state.favoritos = [int(x) for x in lista_ids]
+        except Exception:
+            st.session_state.favoritos = []
+        st.session_state.favs_sincronizados = True
+
+# ESTADO: "visão" mostrada na coluna da direita
 st.session_state.setdefault("visao", "vitrine")  # vitrine | parecidos | recs_fav | lista_fav
 st.session_state.setdefault("ref_idx", None)
 
@@ -33,10 +50,14 @@ def alternar_fav(idx):
     else:
         favs.append(idx)
     st.session_state["pag_recs_fav"] = 1
+    st.session_state.favs_sincronizados = True
+    localS.setItem("favoritos_manga", json.dumps(favs))
 
 
 def limpar_favoritos():
     st.session_state.favoritos = []
+    st.session_state.favs_sincronizados = True
+    localS.deleteItem("favoritos_manga")
     if st.session_state.visao in ("recs_fav", "lista_fav"):
         ir_para("vitrine")
 
@@ -269,7 +290,6 @@ def opcoes(_df, coluna):
                 itens.add(t)
     return sorted(itens)
 
-
 def contem_todos(d, coluna, escolhidos):
     if not escolhidos or coluna not in d.columns:
         return d
@@ -344,6 +364,7 @@ with col_filtros:
         st.button("Limpar favoritos", key="limpar_fav", on_click=limpar_favoritos,
                   disabled=n_fav == 0, use_container_width=True)
 
+
 def tela_especial(generos, temas):
     visao = st.session_state.visao
     base = df_completo()
@@ -377,7 +398,6 @@ def tela_especial(generos, temas):
     res = aplicar_filtros(filtrar(res), generos, temas)
     grade(res, chave=visao)
 
-
 with col_resultados:
     if st.session_state.visao in VISOES_ESPECIAIS:
         tela_especial(generos, temas)
@@ -407,12 +427,3 @@ with col_resultados:
 
 st.markdown(
     """
-    <div style="margin-top: 50px; padding: 22px 20px; background-color: #171717; border: 1px solid #303030; border-radius: 12px; text-align: center; color: #999999; font-size: 13px; line-height: 1.7;">
-        <strong style="color: #f5f5f5;">Recomendador de Mangá</strong> · Similaridade do cosseno com embeddings de sinopses<br>
-        Dados e capas via MyAnimeList (<a href="https://myanimelist.net" target="_blank" style="color: #ffffff; font-weight: 600; text-decoration: none;">ver site</a>) · Autores: Amanda da Silva Gonçalves, Gustavo Franco Mendonça Vasques e Isabelly Raizer ·
-        <a href="https://github.com" target="_blank" style="color: #ffffff; font-weight: 600; text-decoration: none;">GitHub</a> · © 2026<br>
-        Alguns resultados podem conter conteúdo adulto (+18), indicado para maiores de 18 anos.
-    </div>
-    """,
-    unsafe_allow_html=True,
-)
