@@ -20,20 +20,25 @@ if "favs_sincronizados" not in st.session_state:
 if "maior_18" not in st.session_state:
     st.session_state.maior_18 = None
 
-# 1. Lê favoritos salvos no navegador
-favs_salvos = localS.getItem("favoritos_manga", key="get_favs")
-if not st.session_state.favs_sincronizados and favs_salvos is not None:
+# Lê favoritos e idade salvos juntos em um único item no navegador
+dados_salvos = localS.getItem("dados_manga_app")
+if dados_salvos is not None:
     try:
-        lista_ids = json.loads(favs_salvos) if isinstance(favs_salvos, str) else favs_salvos
-        st.session_state.favoritos = [int(x) for x in lista_ids]
+        pacote = json.loads(dados_salvos) if isinstance(dados_salvos, str) else dados_salvos
+        if not st.session_state.favs_sincronizados and "favoritos" in pacote:
+            st.session_state.favoritos = [int(x) for x in pacote["favoritos"]]
+            st.session_state.favs_sincronizados = True
+        if st.session_state.maior_18 is None and pacote.get("maior_18") is not None:
+            st.session_state.maior_18 = bool(pacote["maior_18"])
     except Exception:
-        st.session_state.favoritos = []
-    st.session_state.favs_sincronizados = True
+        pass
 
-# 2. Lê escolha de idade (+18) salva no navegador
-idade_salva = localS.getItem("maior_18_manga", key="get_idade")
-if idade_salva is not None:
-    st.session_state.maior_18 = (str(idade_salva).lower() == "true")
+def salvar_no_navegador():
+    pacote = {
+        "favoritos": st.session_state.favoritos,
+        "maior_18": st.session_state.maior_18,
+    }
+    localS.setItem("dados_manga_app", json.dumps(pacote))
 
 # ESTADO: "visão" mostrada na coluna da direita
 st.session_state.setdefault("visao", "vitrine")  # vitrine | parecidos | recs_fav | lista_fav
@@ -55,12 +60,12 @@ def alternar_fav(idx):
         favs.append(idx)
     st.session_state["pag_recs_fav"] = 1
     st.session_state.favs_sincronizados = True
-    localS.setItem("favoritos_manga", json.dumps(favs), key=f"set_fav_{idx}_{len(favs)}")
+    salvar_no_navegador()
 
 def limpar_favoritos():
     st.session_state.favoritos = []
     st.session_state.favs_sincronizados = True
-    localS.deleteItem("favoritos_manga", key="del_favs")
+    salvar_no_navegador()
     if st.session_state.visao in ("recs_fav", "lista_fav"):
         ir_para("vitrine")
 
@@ -244,13 +249,13 @@ def aviso_idade():
         """,
         unsafe_allow_html=True,
     )
-    c1, c2 = st.columns(2)
+        c1, c2 = st.columns(2)
     if c1.button("Sim, tenho 18+ e aceito", type="primary", use_container_width=True):
         st.session_state.maior_18 = True
-        localS.setItem("maior_18_manga", "true", key="set_idade_sim")
+        salvar_no_navegador()
     if c2.button("Não aceito", use_container_width=True):
         st.session_state.maior_18 = False
-        localS.setItem("maior_18_manga", "false", key="set_idade_nao")
+        salvar_no_navegador()
 
 def filtrar(d):
     if st.session_state.maior_18:
@@ -260,7 +265,7 @@ def filtrar(d):
 # Espera o primeiro ciclo de leitura do navegador terminar antes de decidir abrir o modal
 if "checou_storage" not in st.session_state:
     st.session_state.checou_storage = True
-elif st.session_state.maior_18 is None and idade_salva is None:
+elif st.session_state.maior_18 is None:
     aviso_idade()
 
 # FILTROS DE GÊNERO E TEMA
