@@ -14,12 +14,13 @@ Aplicação web interativa para busca e recomendação semântica de mangás uti
 Este projeto implementa um sistema de recomendação de mangás utilizando Processamento de Linguagem Natural (PLN) e Similaridade de Cosseno. A aplicação analisa as sinopses das obras para identificar conteúdos semanticamente semelhantes e recomendar mangás relacionados à busca realizada pelo usuário.
 
 ### Principais funcionalidades
+### Principais funcionalidades
 - **Busca por título e descrição:** Pesquisa direta por título (original ou em inglês) ou por trechos/descrições livres em português ou inglês.
 - **Filtros combinados:** Refinamento por múltiplos gêneros e temas simultaneamente.
 - **Vitrine paginada:** Exibição dos mangás mais bem avaliados quando nenhuma busca está ativa.
-- **Moderação de conteúdo (+18):** Verificação de idade na entrada e detecção automática de conteúdo sensível em gêneros, temas e sinopses, aplicando desfoque (`blur`) clicável nas capas.
+- **Moderação de conteúdo (+18):** Verificação de idade na entrada (salva no navegador com opção para alterar a preferência na barra lateral) e detecção automática de conteúdo sensível em gêneros, temas e sinopses, aplicando desfoque (`blur`) clicável nas capas.
 - **Sinopses expansíveis:** Corte limpo na última palavra completa com opção de expandir para ler a prévia integral.
-- **Favoritos:** Permite adicionar títulos na lista pessoal, visualizar os itens salvos, limpar a seleção ou gerar recomendações personalizadas com base nas obras favoritas.
+- **Favoritos:** Permite adicionar títulos na lista pessoal (salva localmente no navegador via `localStorage`), visualizar os itens salvos, limpar a seleção ou gerar recomendações personalizadas com base nas obras favoritas.
 - **Parecidos:** Exibe sugestões de obras semelhantes diretamente a partir do card de cada título.
 
 ---
@@ -52,8 +53,9 @@ No código, essa operação é executada de forma vetorizada com NumPy por meio 
 
 ## 4. Tecnologias utilizadas
 
-- **Python** (incluindo módulos nativos como `os`, `re` e `html`)
+- **Python** (incluindo módulos nativos como `os`, `re`, `html`, `json` e `time`)
 - **Streamlit**
+- **Streamlit Local Storage**
 - **Pandas**
 - **NumPy**
 - **PyArrow**
@@ -63,7 +65,7 @@ No código, essa operação é executada de forma vetorizada com NumPy por meio 
 
 ## 5. Estrutura dos arquivos
 
-- `app.py`: interface web, vitrine paginada, filtros, favoritos, modal de verificação +18 e rodapé.
+- `app.py`: interface web, vitrine paginada, filtros, favoritos salvos no navegador (`localStorage`), modal e controle de preferência +18 e rodapé.
 - `similaridade.py`: carregamento dos dados, geração/leitura de embeddings, cálculo da similaridade e detecção de conteúdo +18.
 - `limpar.py`: script de limpeza, remoção de duplicatas e pré-processamento do dataset original.
 - `manga_limpo.parquet`: base de dados tratada utilizada pelo recomendador.
