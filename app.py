@@ -424,6 +424,15 @@ with col_resultados:
         destaque = base.assign(_nota=pd.to_numeric(base["score"], errors="coerce")).sort_values("_nota", ascending=False)
         st.subheader("Mangás mais bem avaliados")
         grade(destaque, chave="destaque")
-
+        
 st.markdown(
     """
+    <div style="margin-top: 50px; padding: 22px 20px; background-color: #171717; border: 1px solid #303030; border-radius: 12px; text-align: center; color: #999999; font-size: 13px; line-height: 1.7;">
+        <strong style="color: #f5f5f5;">Recomendador de Mangá</strong> · Similaridade do cosseno com embeddings de sinopses<br>
+        Dados e capas via MyAnimeList (<a href="https://myanimelist.net" target="_blank" style="color: #ffffff; font-weight: 600; text-decoration: none;">ver site</a>) · Autores: Amanda da Silva Gonçalves, Gustavo Franco Mendonça Vasques e Isabelly Raizer ·
+        <a href="https://github.com" target="_blank" style="color: #ffffff; font-weight: 600; text-decoration: none;">GitHub</a> · © 2026<br>
+        Alguns resultados podem conter conteúdo adulto (+18), indicado para maiores de 18 anos.
+    </div>
+    """,
+    unsafe_allow_html=True,
+)
