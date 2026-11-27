@@ -4,11 +4,66 @@ import os
 import pandas as pd
 import streamlit as st
 
-from similaridade import _formatar, buscar_titulo, carregar, recomendar
+from similaridade import _formatar, buscar_titulo, carregar, recomendar, recomendar_por_indices
 
 st.set_page_config(page_title="Recomendador de Mangá", layout="wide")
 if os.path.exists("estilo.css"):
     st.markdown(f"<style>{open('estilo.css', encoding='utf-8').read()}</style>", unsafe_allow_html=True)
+
+
+# ESTADO: favoritos (índices de linha) e "visão" mostrada na coluna da direita
+st.session_state.setdefault("favoritos", [])
+st.session_state.setdefault("visao", "vitrine")  # vitrine | parecidos | recs_fav | lista_fav
+st.session_state.setdefault("ref_idx", None)
+
+VISOES_ESPECIAIS = ("parecidos", "recs_fav", "lista_fav")
+
+
+def ir_para(visao, ref=None):
+    st.session_state.visao = visao
+    st.session_state.ref_idx = ref
+    for v in VISOES_ESPECIAIS:
+        st.session_state[f"pag_{v}"] = 1
+
+
+def alternar_fav(idx):
+    favs = st.session_state.favoritos
+    if idx in favs:
+        favs.remove(idx)
+    else:
+        favs.append(idx)
+    st.session_state["pag_recs_fav"] = 1
+
+
+def limpar_favoritos():
+    st.session_state.favoritos = []
+    if st.session_state.visao in ("recs_fav", "lista_fav"):
+        ir_para("vitrine")
+
+
+def botoes_acao(onde, r, chave):
+    """Botões ♡ Favoritar e 🔍 Parecidos. `chave` evita chaves duplicadas entre seções."""
+    if r.get("_idx") is None or r.get("_idx") == "":
+        return
+    idx = int(r["_idx"])
+    fav = idx in st.session_state.favoritos
+    onde.button(
+        "♥ Favorito" if fav else "♡ Favoritar",
+        key=f"fav_{chave}_{idx}",
+        on_click=alternar_fav,
+        args=(idx,),
+        type="primary" if fav else "secondary",
+        use_container_width=True,
+        help="Remover dos favoritos" if fav else "Adicionar aos favoritos",
+    )
+    onde.button(
+        "🔍 Parecidos",
+        key=f"sim_{chave}_{idx}",
+        on_click=ir_para,
+        args=("parecidos", idx),
+        use_container_width=True,
+        help="Ver mangás com sinopse parecida com esta",
+    )
 
 
 @st.cache_resource
@@ -37,7 +92,7 @@ def capa(onde, r):
         onde.image(img_url)
 
 
-def cartao(r, similaridade=True):
+def cartao(r, similaridade=True, chave="c"):
     with st.container(border=True):
         col1, col2, col3 = st.columns((1.2, 4, 1.4))
         capa(col1, r)
@@ -55,6 +110,7 @@ def cartao(r, similaridade=True):
             col3.markdown("**Autor**")
             for a in autores.split("|"):
                 col3.write(a.strip())
+        botoes_acao(col3, r, chave)
 
         sinopse = str(r.get("synopsis", "")).strip()
         if not sinopse:
@@ -84,8 +140,8 @@ def _txt(valor, n, sep):
     return html.escape(sep.join(itens[:n]))
 
 
-def cartao_compacto(r):
-    with st.container(border=True, height=335):
+def cartao_compacto(r, chave="g"):
+    with st.container(border=True, height=430):
         capa(st, r)
         nota = r.get("score", "")
         nota = "—" if str(nota) in ("", "nan", "None") else nota
@@ -98,6 +154,7 @@ def cartao_compacto(r):
             """,
             unsafe_allow_html=True,
         )
+        botoes_acao(st, r, chave)
 
 
 def grade(res, chave="vitrine", por_pagina=10, por_linha=5):
@@ -124,7 +181,7 @@ def grade(res, chave="vitrine", por_pagina=10, por_linha=5):
         cols = st.columns(por_linha)
         for col, (_, r) in zip(cols, fatia.iloc[i:i + por_linha].iterrows()):
             with col:
-                cartao_compacto(r)
+                cartao_compacto(r, chave)
 
     if total_paginas > 1:
         c_esq, c_meio, c_dir = st.columns((1.2, 2, 1.2))
@@ -145,7 +202,9 @@ df, model, emb = dados()
 
 @st.cache_resource
 def df_completo():
-    return df if "mais_18" in df.columns else _formatar(df.copy())
+    d = df if "mais_18" in df.columns else _formatar(df.copy())
+    # df tem índice 0..n-1 (reset_index), igual à linha de `emb`
+    return d if "_idx" in d.columns else d.assign(_idx=d.index)
 
 
 # AVISO +18
@@ -235,7 +294,7 @@ def checklist(titulo, itens, prefixo):
     return escolhidos
 
 
-def lista(res, similaridade=True):
+def lista(res, similaridade=True, chave="l"):
     if len(res) == 0:
         st.info("Nenhum mangá encontrado com esses filtros.")
         return
@@ -244,7 +303,7 @@ def lista(res, similaridade=True):
     elif not st.session_state.maior_18:
         st.info("Resultados +18 estão ocultos. Recarregue a página para responder ao aviso de idade novamente.")
     for _, r in res.iterrows():
-        cartao(r, similaridade=similaridade)
+        cartao(r, similaridade=similaridade, chave=chave)
 
 
 st.title("Recomendador de Mangá")
@@ -252,6 +311,9 @@ st.caption("As recomendações são ordenadas por sua similaridade entre as sino
 busca = st.text_input(
     "Digite um título, trecho de sinopse ou descrição",
     placeholder="Dica: quanto mais detalhada a descrição, mais precisa será a recomendação. Valores perto de 0,4 a 0,6 já indicam boa semelhança.",
+    key="busca",
+    on_change=ir_para,
+    args=("vitrine",),  # digitar uma nova busca sai das telas de parecidos/favoritos
 ).strip()
 
 col_filtros, col_resultados = st.columns((1, 3), gap="large")
@@ -262,21 +324,65 @@ with col_filtros:
         temas = checklist("Temas", opcoes(df, "themes"), "t")
         st.button("Limpar filtros", on_click=limpar_filtros, use_container_width=True)
         st.caption("Os resultados precisam ter todos os itens escolhidos.")
+    with st.container(border=True):
+        n_fav = len(st.session_state.favoritos)
+        st.markdown(f"### Favoritos ({n_fav})")
+        st.button("Ver meus favoritos", key="ver_fav", on_click=ir_para, args=("lista_fav",),
+                  disabled=n_fav == 0, use_container_width=True)
+        st.button("Recomendar com base nos favoritos", key="rec_fav", on_click=ir_para,
+                  args=("recs_fav",), disabled=n_fav == 0, use_container_width=True)
+        st.button("Limpar favoritos", key="limpar_fav", on_click=limpar_favoritos,
+                  disabled=n_fav == 0, use_container_width=True)
+
+def tela_especial(generos, temas):
+    visao = st.session_state.visao
+    base = df_completo()
+    st.button("← Voltar", key="voltar", on_click=ir_para, args=("vitrine",))
+
+    if visao == "parecidos":
+        ref = st.session_state.ref_idx
+        st.subheader(f"Mais parecidos com: {base.at[ref, 'title']}")
+        st.caption("Cosseno entre a sinopse deste mangá e a de todos os outros.")
+        res = recomendar_por_indices([ref], base, emb)
+    elif visao == "recs_fav":
+        favs = st.session_state.favoritos
+        if not favs:
+            st.info("Você ainda não tem favoritos. Use o botão ♡ nos cartões.")
+            return
+        st.subheader(f"Recomendados a partir dos seus {len(favs)} favoritos")
+        st.caption(
+            "Seu gosto é a média normalizada dos vetores dos favoritos; "
+            "a similaridade é o cosseno desse vetor com cada mangá."
+        )
+        res = recomendar_por_indices(favs, base, emb)
+    else:  # lista_fav
+        favs = st.session_state.favoritos
+        if not favs:
+            st.info("Você ainda não tem favoritos. Use o botão ♡ nos cartões.")
+            return
+        st.subheader("Meus favoritos")
+        res = base.iloc[favs]
+
+    res = aplicar_filtros(filtrar(res), generos, temas)
+    grade(res, chave=visao)
+
 
 with col_resultados:
-    if busca:
+    if st.session_state.visao in VISOES_ESPECIAIS:
+        tela_especial(generos, temas)
+    elif busca:
         achados = aplicar_filtros(filtrar(buscar_titulo(busca, df)), generos, temas)
         if len(achados):
             st.subheader("Títulos encontrados")
             for _, r in achados.iterrows():
-                cartao(r, similaridade=False)
+                cartao(r, similaridade=False, chave="t")
         rotulo, res = recomendar(busca, df, model, emb, k=1000)
         res = aplicar_filtros(filtrar(res), generos, temas)
         if len(achados):
             res = res[~res["title"].isin(achados["title"])]
         res = res.head(10)
         st.subheader(rotulo)
-        lista(res)
+        lista(res, chave="r")
     elif generos or temas:
         res = aplicar_filtros(filtrar(df_completo()), generos, temas)
         res = res.assign(_nota=pd.to_numeric(res["score"], errors="coerce")).sort_values("_nota", ascending=False)
