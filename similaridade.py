@@ -98,28 +98,70 @@ def recomendar(busca, df, model, emb, k=10):
     res["similaridade"] = sims[top].round(3)
     return rotulo, res.fillna("")
 
-def recomendar_por_indices(indices, df, emb, k=1000):
+def _itens(v):
+    """Lista de tags de uma célula (lista/array ou texto separado por | ou ,)."""
+    if isinstance(v, (list, tuple, np.ndarray)):
+        return [str(t).strip() for t in v if str(t).strip()]
+    if v is None or (isinstance(v, float) and np.isnan(v)):
+        return []
+    return [t.strip() for t in re.split(r"[|,]", str(v)) if t.strip()]
+
+def matriz_tags(df):
+    """Matriz (n, V) com 1 se o mangá tem o gênero/tema; linhas com norma 1.
+    Calcule uma vez e reutilize (no app, com st.cache_resource)."""
+    linhas = []
+    vocab = {}
+    for g, t in zip(df["genres"] if "genres" in df.columns else [None] * len(df),
+                    df["themes"] if "themes" in df.columns else [None] * len(df)):
+        tags = set(_itens(g)) | set(_itens(t))
+        linhas.append([vocab.setdefault(x, len(vocab)) for x in tags])
+    m = np.zeros((len(df), len(vocab)), dtype=np.float32)
+    for i, cols in enumerate(linhas):
+        m[i, cols] = 1.0
+    norma = np.linalg.norm(m, axis=1, keepdims=True)
+    return m / np.where(norma == 0, 1, norma)
+
+def recomendar_por_indices(indices, df, emb, k=1000, peso_max=0.0, peso_tags=0.0, tags=None):
     """Recomenda a partir de um ou mais mangás (índices de linha de df/emb).
 
-    O "gosto" é a média dos vetores dos mangás escolhidos, normalizada para
-    norma 1. Como todos os vetores têm norma 1, o cosseno com esse vetor é só
-    o produto escalar: sims = emb @ q.
-    Um único índice = "Ver parecidos"; vários = recomendação por favoritos.
+    Pontuação de cada mangá j, com q = média normalizada dos vetores escolhidos:
+      emb_j  = (1 - peso_max) * cos(j, q) + peso_max * max_i cos'(j, favorito_i)
+      (cos' = cosseno reescalado pela densidade dos vizinhos de cada favorito)
+      score  = (1 - peso_tags) * emb_j + peso_tags * cos(tags_j, perfil_de_tags)
+    - cos com a média captura o gosto "geral" dos favoritos;
+    - o máximo captura quem parece muito com UM favorito, mesmo que os gostos
+      sejam diferentes (a média cairia num ponto "no meio");
+    - o perfil de tags é a média dos vetores de gênero/tema dos favoritos.
+    Com um único índice, média e máximo coincidem (cosseno puro de sinopses).
     `df` deve ter as linhas na mesma ordem de `emb` (índice = posição).
     """
+    vazio = df.iloc[0:0].assign(similaridade=pd.Series(dtype=float))
     idx = sorted({int(i) for i in indices})
     if not idx:
-        return df.iloc[0:0].assign(similaridade=pd.Series(dtype=float))
+        return vazio
     q = emb[idx].mean(axis=0)
     norma = np.linalg.norm(q)
     if norma == 0:
-        return df.iloc[0:0].assign(similaridade=pd.Series(dtype=float))
-    sims = emb @ (q / norma)
-    sims[idx] = -np.inf  # não recomenda os próprios mangás de origem
+        return vazio
+    score = emb @ (q / norma)
+    if peso_max > 0 and len(idx) > 1:
+        S = emb @ emb[idx].T  # (n, m): cosseno de cada mangá com cada favorito, alguns favoritos têm vizinhos naturalmente mais próximos que outros
+        # (grupos mais "densos"). recoloca cada coluna pelo nível dos 10 vizinhos
+        # mais próximos do favorito, senão o grupo mais denso domina o máximo.
+        viz = np.partition(S, -11, axis=0)[-11:]          # 11 maiores por coluna
+        ref = (np.sort(viz, axis=0)[:-1]).mean(axis=0)    # tira o próprio favorito
+        S = S * (ref.mean() / ref)
+        score = (1 - peso_max) * score + peso_max * S.max(axis=1)
+    if peso_tags > 0 and tags is not None:
+        perfil = tags[idx].mean(axis=0)
+        n_p = np.linalg.norm(perfil)
+        if n_p > 0:
+            score = (1 - peso_tags) * score + peso_tags * (tags @ (perfil / n_p))
+    score[idx] = -np.inf  # não recomenda os próprios mangás de origem
     n = min(k, len(emb) - len(idx))
-    top = np.argsort(-sims)[:n]
+    top = np.argsort(-score)[:n]
     res = df.iloc[top].copy()
     if "_idx" not in res.columns:
         res["_idx"] = res.index
-    res["similaridade"] = sims[top].round(3)
+    res["similaridade"] = score[top].round(3)
     return res
