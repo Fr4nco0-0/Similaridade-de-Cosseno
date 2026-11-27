@@ -332,7 +332,9 @@ def lista(res, similaridade=True, chave="l"):
         cartao(r, similaridade=similaridade, chave=chave)
 
 st.title("Recomendador de Mangá")
-st.caption("As recomendações são ordenadas por sua similaridade entre as sinopses. Use os filtros de gêneros e temas para refinar a sua busca.")
+st.caption("st.caption(
+    "Busque por um título para abrir o card e ver obras parecidas, ou descreva um trecho desejado para ordenar as recomendações pela similaridade entre as sinopses. 
+    Use os filtros de gêneros e temas para refinar sua busca.")")
 busca = st.text_input(
     "Digite um título, trecho de sinopse ou descrição",
     placeholder="Dica: quanto mais detalhada a descrição, mais precisa será a recomendação. Valores perto de 0,4 a 0,6 já indicam boa semelhança.",
