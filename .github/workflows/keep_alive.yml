@@ -2,7 +2,7 @@ name: Manter Streamlit Ativo
 
 on:
   schedule:
-    - cron: '0 */6 * * *'
+    - cron: '17 */4 * * *'
   workflow_dispatch:
 
 jobs:
@@ -12,7 +12,7 @@ jobs:
       - name: Instalar Playwright e Chromium
         run: |
           pip install playwright
-          playwright install chromium
+          playwright install --with-deps chromium
 
       - name: Acessar aplicativo Streamlit
         run: |
@@ -22,13 +22,13 @@ jobs:
           with sync_playwright() as p:
               browser = p.chromium.launch()
               page = browser.new_page()
-              page.goto('https://streamlit.app', timeout=60000)
+              page.goto('https://recomendador-manga.streamlit.app/', timeout=60000)
               page.wait_for_timeout(15000)
-              
+
               wakeup_btn = page.locator('button:has-text(\"Yes, get this app back up!\")')
               if wakeup_btn.count() > 0:
                   wakeup_btn.click()
                   page.wait_for_timeout(20000)
-                  
+
               browser.close()
           "
